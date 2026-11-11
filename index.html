@@ -1037,8 +1037,8 @@ async function cbkRun(force,show){if(CBK_BUSY)return;const say=t=>{if(show===tru
   await W(()=>D.doc('backups/'+slot).set({date:today(),at:new Date().toISOString(),parts:parts.length,mode:z.mode,by:(me&&me.name)||'',prod:db.products.length,ventas:db.sales.length,kb:Math.round(z.b64.length/1024)}));
   for(let i=parts.length;i<old;i++){try{await W(()=>D.doc('backups/'+slot+'_'+i).delete())}catch(e){}}
   try{localStorage.setItem('pesc_cbk',today())}catch(e){}
-  say('☁️ Respaldo guardado en la nube ('+Math.round(z.b64.length/1024)+' KB).');if(currentPage==='config')render('config')
- }catch(e){say('☁️ No se pudo guardar el respaldo en la nube: '+String(e&&(e.message||e.code)||e))}finally{CBK_BUSY=false}}
+  if(show===true)say('☁️ Respaldo guardado en la nube ('+Math.round(z.b64.length/1024)+' KB).');else notify('☁️ Respaldo guardado en la nube');if(currentPage==='config')render('config')
+ }catch(e){if(show===true)say('☁️ No se pudo guardar el respaldo en la nube: '+String(e&&(e.message||e.code)||e));else notify('⚠️ No se pudo guardar el respaldo en la nube. Se intentará de nuevo.')}finally{CBK_BUSY=false}}
 async function cbkList(){const out=$('#cbkOut');if(!out)return;if(!cbkReady()){out.innerHTML='<p class="sub">Conecte primero la Sincronización.</p>';return}out.innerHTML='<p class="sub">Buscando respaldos…</p>';
  let rows=[];for(let d=0;d<7;d++){try{const m=await W(()=>SYNC.dbh.doc('backups/b'+d).get());if(m.exists){const x=m.data()||{};if(x.date)rows.push({slot:'b'+d,...x})}}catch(e){out.innerHTML='<p class="sub">No se pudo consultar la nube: '+esc(e.message||e.code||'')+'</p>';return}}
  rows.sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
@@ -1315,6 +1315,18 @@ async function licDelAsk(id){const l=licLoad();if(!l||id===l.d)return;if(!(await
 function licCard(){if(!LIC_ON)return '';setTimeout(licFill,60);return '<div class="card panel"><h2>🔑 Licencia del sistema</h2><div id="licInfo" class="sub">Cargando…</div></div>'}
 {const _cl=configPage;configPage=function(){return _cl()+licCard()}}
 licInit();
+
+
+/* ===== fix33: avisos al guardar y respaldar ===== */
+let SV_UA=0,SV_MSG='',SV_MT=0,SV_T=null,SV_AT=0;
+['click','submit','change','keydown','touchend'].forEach(ev=>document.addEventListener(ev,e=>{SV_UA=Date.now();if(ev==='submit'){const M={prodForm:'Producto guardado',buyForm:'Compra guardada',peopleForm:(currentPage==='proveedores'?'Proveedor guardado':'Cliente guardado'),expenseForm:'Gasto guardado',configForm:'Configuración guardada'};const id=e.target&&e.target.getAttribute&&e.target.getAttribute('id');if(M[id]){SV_MSG=M[id];SV_MT=Date.now()}}},true));
+{const _nt=notify;notify=function(m){notify.at=Date.now();return _nt.apply(this,arguments)}}
+{const _sv=save;save=function(){const r=_sv.apply(this,arguments);if(r!==false&&Date.now()-SV_UA<4000){SV_AT=Date.now();clearTimeout(SV_T);SV_T=setTimeout(()=>{if((notify.at||0)>=SV_AT)return;const m=(Date.now()-SV_MT<8000&&SV_MSG)?SV_MSG:'Cambio guardado';SV_MSG='';try{notify('✅ '+m)}catch(e){}},600)}return r}}
+function svSet(m){SV_MSG=m;SV_MT=Date.now()}
+{const _fs=finishSale;finishSale=function(){svSet('Venta guardada');return _fs.apply(this,arguments)}}
+{const _sc=saveClosing;saveClosing=function(){svSet('Cierre de caja guardado');return _sc.apply(this,arguments)}}
+{const _su=saveUser;saveUser=function(){svSet('Usuario guardado');return _su.apply(this,arguments)}}
+{const _bk=backup;backup=function(){const r=_bk.apply(this,arguments);notify('✅ Respaldo descargado. Guárdelo en un lugar seguro (archivo respaldo-pescaderia).');return r}}
 
 (async()=>{await bootStore();syncLoadMeta();await load();gate();if(document.readyState==='complete')syncStart();else window.addEventListener('load',()=>syncStart());setTimeout(lowCheck,3500);setTimeout(backupCheck,9000);setInterval(backupCheck,900000);setTimeout(cobroCheck,6500);setTimeout(fixedRun,4000);setInterval(fixedRun,3600000);setTimeout(resumenCheck,12000);setInterval(resumenCheck,900000);try{themeTick();setInterval(themeTick,60000)}catch(e){}setTimeout(fxApply,3000);setInterval(fxApply,10800000);setTimeout(expCheck,8500);setInterval(expCheck,900000);setTimeout(badgeCobro,2500);setInterval(badgeCobro,300000);setInterval(cobroCheck,900000);setTimeout(cbkRun,25000);setInterval(cbkRun,1800000)})();
 </script></body></html>
