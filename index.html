@@ -85,7 +85,7 @@ input:focus,select:focus,textarea:focus{outline:0!important;border-color:var(--o
 @keyframes fade{from{opacity:0}to{opacity:1}}
 @keyframes pop{from{opacity:0;transform:translateY(24px) scale(.92)}to{opacity:1;transform:none}}
 @keyframes bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-4px) rotate(-5deg)}}
-@keyframes drift{to{background-position-x:-220px}}
+@keyframes drift{to{transform:translate3d(-220px,0,0)}}
 @media(max-width:850px){.side{border-radius:0 22px 22px 0}}
 @media(max-width:620px){.side{border-radius:0 0 22px 22px;padding:10px 0 8px}.side::after{display:none}.brand{grid-template-columns:36px 1fr;font-size:16px;padding:0 14px 8px}.logo{width:36px;height:36px;font-size:20px;border-radius:12px}.brand span{display:none}.nav{padding:0 8px}.nav button{white-space:nowrap;padding:7px 11px;border-radius:999px;font-size:13px}.nav button i{width:auto;height:auto;background:none;font-size:15px}.nav button:hover{transform:none}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.top h1{font-size:24px}}
 @media print{.side::after{display:none}.card,.grid>.card{box-shadow:none;border:0;border-radius:0}#receipt,#dlgBody{box-shadow:none;border-radius:0}}
@@ -222,7 +222,7 @@ button,select,input:not([type=checkbox]):not([type=radio]){min-height:42px}
 /* fix47: escena de carretera: Playa Coyote, local Campos Pacific y camion repartidor (todo animado) */
 .sea.rd{font-size:10px;height:10.4em;background:linear-gradient(180deg,#86cdee 0%,#d6f1fb 62%,#d6f1fb 100%)}
 .rd .rsea{position:absolute;left:0;right:0;bottom:4em;height:2.6em;background:#2f7fa8}
-.rd .rsea::before{content:"";position:absolute;left:0;right:0;top:-.9em;height:1em;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='34'%3E%3Cpath d='M0 17Q40 -1 80 17T160 17V34H0Z' fill='%232f7fa8'/%3E%3C/svg%3E") repeat-x;background-size:8em 1em;animation:rdWave 7s linear infinite}
+.rd .rsea::before{content:"";position:absolute;left:0;right:-8em;top:-.9em;height:1em;will-change:transform;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='34'%3E%3Cpath d='M0 17Q40 -1 80 17T160 17V34H0Z' fill='%232f7fa8'/%3E%3C/svg%3E") repeat-x;background-size:8em 1em;animation:rdWave 7s linear infinite}
 .rd .rsand{position:absolute;left:0;right:0;bottom:3em;height:1.4em;background:#ecdca8;z-index:1}
 .rd .palm{position:absolute;bottom:4.1em;font-size:3.4em;line-height:1;z-index:1;transform-origin:50% 100%;animation:rdSway 4.5s ease-in-out infinite}
 .rd .palm.p1{left:24%}.rd .palm.p2{left:76%;font-size:3em;animation-delay:-2s}
@@ -240,7 +240,7 @@ button,select,input:not([type=checkbox]):not([type=radio]){min-height:42px}
 .rd .rdoor::after{content:"";position:absolute;right:.35em;top:1.1em;width:.3em;height:.3em;border-radius:50%;background:#ffd23f}
 .rd .rroad{position:absolute;left:0;right:0;bottom:0;height:3em;background:#3a444d;border-top:.2em solid #cfd6db;z-index:3}
 .rd .rroad::after{content:"";position:absolute;left:0;right:0;bottom:1em;height:.25em;background:repeating-linear-gradient(90deg,#f2d04a 0 2.2em,transparent 2.2em 4.4em)}
-.rd .tk{position:absolute;bottom:.25em;left:-17em;width:16em;height:4.8em;z-index:5;animation:rdGo 30s linear infinite}
+.rd .tk{position:absolute;bottom:.25em;left:0;width:16em;height:4.8em;z-index:5;transform:translate3d(-17em,0,0);will-change:transform;animation:rdGo 30s linear infinite}
 .rd .tkd{position:absolute;inset:0;animation:rdFlip 30s linear infinite}
 .rd .tkc{position:absolute;inset:0;animation:rdBob .45s ease-in-out infinite}
 .rd .tbox{position:absolute;left:0;bottom:1.15em;width:11em;height:3.5em;background:#fff;border-radius:.5em .3em .3em .5em;box-shadow:inset 0 -.55em 0 #0f6e8c,0 .1em .3em #0003}
@@ -253,16 +253,24 @@ button,select,input:not([type=checkbox]):not([type=radio]){min-height:42px}
 .rd .wh{position:absolute;bottom:.1em;width:1.7em;height:1.7em;border-radius:50%;background:#1b1f23;border:.12em solid #4b555c;box-sizing:border-box}
 .rd .wh.w1{left:2em}.rd .wh.w2{left:12em}
 .rd .wh b{position:absolute;inset:.3em;border-radius:50%;border:.16em dashed #c9d1d6;animation:rdSpin .55s linear infinite}
-@keyframes rdWave{to{background-position-x:8em}}
+@keyframes rdWave{to{transform:translate3d(-8em,0,0)}}
 @keyframes rdSway{0%,100%{transform:rotate(-2.5deg)}50%{transform:rotate(2.5deg)}}
 @keyframes rdSign{0%,100%{transform:rotate(-1deg)}50%{transform:rotate(1deg)}}
 @keyframes rdGlow{0%,100%{text-shadow:0 0 0 #ffd23f00}50%{text-shadow:0 0 .6em #ffd23f}}
-@keyframes rdGo{0%{left:-17em}47%{left:calc(100% + 1em)}53%{left:calc(100% + 1em)}100%{left:-17em}}
+@keyframes rdGo{0%{transform:translate3d(-17em,0,0)}47%,53%{transform:translate3d(calc(100vw + 1em),0,0)}100%{transform:translate3d(-17em,0,0)}}
+@supports (width:1cqw){.sea.rd{container-type:inline-size}@keyframes rdGo{0%{transform:translate3d(-17em,0,0)}47%,53%{transform:translate3d(calc(100cqw + 1em),0,0)}100%{transform:translate3d(-17em,0,0)}}}
 @keyframes rdFlip{0%,49.9%{transform:scaleX(1)}50%,100%{transform:scaleX(-1)}}
 @keyframes rdBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-.12em)}}
 @keyframes rdSpin{to{transform:rotate(360deg)}}
 @media(max-width:620px){.sea.rd{font-size:8px}}
-@media(prefers-reduced-motion:reduce){.rd .tk{animation:none;left:55%}.rd .tkd,.rd .tkt{animation:none}}
+@media(prefers-reduced-motion:reduce){.rd .tk{animation:none;transform:translate3d(55vw,0,0)}.rd .tkd,.rd .tkt{animation:none}}
+</style><style id="perfCss">
+/* fix48: desplazamiento mas suave en tabletas (menos repintado) */
+body{background-attachment:scroll!important}
+.side{will-change:transform;transform:translateZ(0)}
+.side::after{right:-220px!important;will-change:transform}
+.sea{contain:layout paint style;transform:translateZ(0)}
+.sun,.cloud,.palm,.rsign,.tkc,.wh b{will-change:transform}
 </style>
 </head>
 <body><div class="app">
@@ -1560,7 +1568,7 @@ async function tnAutoSync(){try{localStorage.removeItem('pesc_autosync')}catch(e
 window.addEventListener('load',()=>setTimeout(async()=>{try{if(!localStorage.getItem('pesc_autosync')||!window.firebase||typeof LIC_ON==='undefined'||!LIC_ON||!licLoad())return;fbReady();const u=await new Promise(r=>{const off=firebase.auth().onAuthStateChanged(x=>{off();r(x)})});if(u)await tnAutoSync();else localStorage.removeItem('pesc_autosync')}catch(e){}},2500));
 
 /* ===== fix45: aviso y aplicacion de actualizaciones (todos los clientes) ===== */
-const BUILD='20261119-0347';
+const BUILD='20261119-0355';
 function updBanner(v){if(document.getElementById('updBar'))return;const d=document.createElement('div');d.id='updBar';d.setAttribute('role','alert');
  d.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:99999;max-width:460px;margin:0 auto;background:#0f6e8c;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 8px 28px rgba(0,0,0,.35);font:600 14px/1.35 system-ui,sans-serif;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
  d.innerHTML='<span style="flex:1;min-width:180px">🔄 Hay una versión nueva del sistema.<br><small style="font-weight:400;opacity:.9">Si tiene una venta a medias, termínela y luego actualice.</small></span><button id="updGo" style="background:#f5c20c;color:#14232d;border:0;border-radius:9px;padding:9px 14px;font:700 14px system-ui,sans-serif">Actualizar ahora</button><button id="updLater" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:9px;padding:9px 12px;font:600 13px system-ui,sans-serif">Después</button>';
