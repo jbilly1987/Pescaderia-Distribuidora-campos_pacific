@@ -207,6 +207,15 @@ body.dark .hours .hb{background:#4f8ea0}body.dark .hours .hc.pk .hb{background:#
 button,select,input:not([type=checkbox]):not([type=radio]){min-height:42px}
 .small{min-height:38px}
 }
+</style><style id="sideFix">
+/* fix44: menu lateral fijo; el menu y la pantalla principal se desplazan por separado */
+@media screen and (min-width:621px){
+.app{align-items:flex-start}
+.side{position:sticky;top:0;align-self:flex-start;height:100vh;height:100dvh;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:none}
+.side::-webkit-scrollbar{display:none}
+.main{align-self:stretch}
+}
+.licMsg:empty{display:none!important}
 </style>
 </head>
 <body><div class="app">
@@ -1502,5 +1511,26 @@ async function tnAutoSync(){try{localStorage.removeItem('pesc_autosync')}catch(e
  for(let i=0;i<30&&SYNC.st!=='ok';i++)await new Promise(r=>setTimeout(r,500));
  try{if(!me&&db.users.length)location.reload()}catch(e){}}
 window.addEventListener('load',()=>setTimeout(async()=>{try{if(!localStorage.getItem('pesc_autosync')||!window.firebase||typeof LIC_ON==='undefined'||!LIC_ON||!licLoad())return;fbReady();const u=await new Promise(r=>{const off=firebase.auth().onAuthStateChanged(x=>{off();r(x)})});if(u)await tnAutoSync();else localStorage.removeItem('pesc_autosync')}catch(e){}},2500));
+
+/* ===== fix45: aviso y aplicacion de actualizaciones (todos los clientes) ===== */
+const BUILD='20261119-0320';
+function updBanner(v){if(document.getElementById('updBar'))return;const d=document.createElement('div');d.id='updBar';d.setAttribute('role','alert');
+ d.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:99999;max-width:460px;margin:0 auto;background:#0f6e8c;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 8px 28px rgba(0,0,0,.35);font:600 14px/1.35 system-ui,sans-serif;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
+ d.innerHTML='<span style="flex:1;min-width:180px">🔄 Hay una versión nueva del sistema.<br><small style="font-weight:400;opacity:.9">Si tiene una venta a medias, termínela y luego actualice.</small></span><button id="updGo" style="background:#f5c20c;color:#14232d;border:0;border-radius:9px;padding:9px 14px;font:700 14px system-ui,sans-serif">Actualizar ahora</button><button id="updLater" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:9px;padding:9px 12px;font:600 13px system-ui,sans-serif">Después</button>';
+ document.body.appendChild(d);document.getElementById('updGo').onclick=()=>updApply(v);document.getElementById('updLater').onclick=()=>{d.remove();try{localStorage.setItem('pesc_upd_later',String(Date.now()))}catch(e){}}}
+async function updCheck(){if(!/^https?:/.test(location.protocol)||!navigator.onLine)return;
+ try{const later=+(localStorage.getItem('pesc_upd_later')||0);if(Date.now()-later<20*60000)return;
+  const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();if(!j||!j.v||j.v===BUILD)return;
+  let t={};try{t=JSON.parse(localStorage.getItem('pesc_upd')||'{}')}catch(e){}if(t.v===j.v&&Date.now()-(t.t||0)<10*60000)return;
+  updBanner(j.v)}catch(e){}}
+async function updApply(v){const b=document.getElementById('updGo');if(b){b.disabled=true;b.textContent='Actualizando…'}
+ try{idbFlush()}catch(e){}try{localStorage.setItem('pesc_upd',JSON.stringify({v,t:Date.now()}));localStorage.removeItem('pesc_upd_later')}catch(e){}
+ await new Promise(r=>setTimeout(r,500));
+ try{const rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.map(x=>x.unregister()))}catch(e){}
+ try{const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))}catch(e){}
+ location.reload()}
+window.addEventListener('load',()=>setTimeout(updCheck,8000));
+setInterval(updCheck,5*60000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-(updCheck.t||0)>60000){updCheck.t=Date.now();updCheck()}});
 (async()=>{await bootStore();syncLoadMeta();await load();gate();if(document.readyState==='complete')syncStart();else window.addEventListener('load',()=>syncStart());setTimeout(lowCheck,3500);setTimeout(backupCheck,9000);setInterval(backupCheck,900000);setTimeout(cobroCheck,6500);setTimeout(fixedRun,4000);setInterval(fixedRun,3600000);setTimeout(resumenCheck,12000);setInterval(resumenCheck,900000);try{themeTick();setInterval(themeTick,60000)}catch(e){}setTimeout(fxApply,3000);setInterval(fxApply,10800000);setTimeout(expCheck,8500);setInterval(expCheck,900000);setTimeout(badgeCobro,2500);setInterval(badgeCobro,300000);setInterval(cobroCheck,900000);setTimeout(cbkRun,25000);setInterval(cbkRun,1800000)})();
 </script></body></html>
