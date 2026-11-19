@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Generador de licencias</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#16303f">
+<link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#f3f6f8;--card:#fff;--ink:#14232d;--mut:#5d7280;--line:#dbe4ea;--pri:#0f6e8c;--priink:#fff;--ok:#157a43;--okbg:#e2f4ea;--bad:#b3261e;--badbg:#fbe7e5;--warn:#8a5a00;--warnbg:#fff2d6}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1b23;--card:#172733;--ink:#e8f0f4;--mut:#93a8b5;--line:#27404f;--pri:#3bb1d4;--priink:#06222c;--ok:#5fd18f;--okbg:#14382a;--bad:#ff8a80;--badbg:#44211f;--warn:#ffcf70;--warnbg:#41330f}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:max(0px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(20px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left))}
+.wrap{max-width:760px;margin:0 auto}
+h1{font-size:20px;margin:16px 0 4px}h2{font-size:16px;margin:0 0 10px}
+.sub{color:var(--mut);font-size:13px;margin:0 0 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:0 0 12px}
+label{display:block;font-size:12px;color:var(--mut);margin:10px 0 3px;font-weight:600}
+input,textarea{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px}
+button{font:inherit;font-weight:600;border:0;border-radius:8px;padding:10px 14px;background:var(--pri);color:var(--priink);cursor:pointer}
+button.sec{background:transparent;color:var(--pri);border:1px solid var(--line)}
+button.bad{background:var(--bad);color:#fff}
+button.sm{padding:6px 10px;font-size:13px}
+button:disabled{opacity:.5}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row>*{min-width:0}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:700}
+.on{background:var(--okbg);color:var(--ok)}.off{background:var(--badbg);color:var(--bad)}.wn{background:var(--warnbg);color:var(--warn)}
+.sn{font:700 16px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.5px;word-break:break-all}
+.msg{padding:9px 12px;border-radius:8px;margin:0 0 12px;font-size:14px}
+.msg.e{background:var(--badbg);color:var(--bad)}.msg.o{background:var(--okbg);color:var(--ok)}
+.lic{cursor:pointer}.lic .meta{color:var(--mut);font-size:13px;margin-top:4px}
+.det{border-top:1px solid var(--line);margin-top:10px;padding-top:10px}
+.dev{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:6px 0;border-bottom:1px dashed var(--line);font-size:13px}
+.dev:last-child{border-bottom:0}
+.cnt{display:flex;align-items:center;gap:8px}.cnt b{min-width:24px;text-align:center;font-size:18px}
+.small{font-size:12px;color:var(--mut)}
+[hidden]{display:none!important}
+</style></head><body><div class="wrap">
+<div id="login" hidden>
+ <h1>Generador de licencias</h1><p class="sub">Solo para el administrador. Entre con el correo de administrador.</p>
+ <div class="card">
+  <div id="lmsg"></div>
+  <label>Correo de administrador</label><input id="em" type="email" autocomplete="username" autocapitalize="off">
+  <label>Contraseña</label><input id="pw" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')entrar()">
+  <div class="row" style="margin-top:14px"><button onclick="entrar()">Entrar</button><button class="sec" onclick="crearAdmin()">Crear cuenta de administrador (primera vez)</button></div>
+  <p class="small">Si ya usa ese correo en el sistema de la pescadería, entre con la misma contraseña.</p>
+ </div>
+</div>
+<div id="app" hidden>
+ <div class="top"><div><h1>Licencias</h1><p class="sub" id="who"></p></div><div class="row"><button class="sec sm" onclick="cargar()">Actualizar</button><button class="sec sm" onclick="salir()">Salir</button></div></div>
+ <div id="amsg"></div>
+ <div class="card">
+  <h2>Nueva licencia</h2>
+  <div class="row"><div style="flex:2;min-width:160px"><label>Cliente / empresa</label><input id="ncli" placeholder="Ej. Pescadería El Puerto"></div>
+  <div style="flex:1;min-width:110px"><label>Aparatos permitidos</label><input id="nmax" type="number" min="1" value="1" inputmode="numeric"></div></div>
+  <label>Nota (opcional)</label><input id="nnota" placeholder="Teléfono, precio, fecha de pago…">
+  <div class="row" style="margin-top:12px"><button id="bgen" onclick="generar()">Generar serial</button></div>
+ </div>
+ <input id="busca" placeholder="Buscar por serial, cliente o correo…" oninput="pintar()" style="margin-bottom:12px">
+ <div id="lista"></div>
+ <p class="small" id="pie"></p>
+</div>
+</div>
+<script>
+const CFG={apiKey:"AIzaSyADSEHB1Z10BBCaDH-aW1Z2R28N1WWdwqI",projectId:"pescaderia-campos-pacific"};
+const FS='https://firestore.googleapis.com/v1/projects/'+CFG.projectId+'/databases/(default)/documents';
+const AL='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+let TOK=null,EXP=0,LIC=[],OPEN=null,EMAIL='';
+const $=id=>document.getElementById(id);
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function msg(id,t,ok){$(id).innerHTML=t?'<div class="msg '+(ok?'o':'e')+'">'+esc(t)+'</div>':''}
+function errAuth(c){const m={EMAIL_NOT_FOUND:'Ese correo no tiene cuenta. Use «Crear cuenta de administrador» si es la primera vez.',INVALID_PASSWORD:'Contraseña incorrecta.',INVALID_LOGIN_CREDENTIALS:'Correo o contraseña incorrectos.',EMAIL_EXISTS:'Ese correo ya tiene cuenta: toque «Entrar».',WEAK_PASSWORD:'La contraseña debe tener al menos 6 caracteres.',INVALID_EMAIL:'El correo no es válido.',OPERATION_NOT_ALLOWED:'En Firebase falta habilitar el acceso con correo y contraseña.',TOO_MANY_ATTEMPTS_TRY_LATER:'Demasiados intentos. Espere unos minutos.',USER_DISABLED:'Esa cuenta está desactivada.'};const k=String(c||'').split(' ')[0];return m[k]||('No se pudo entrar: '+c)}
+async function auth(kind){const em=$('em').value.trim().toLowerCase(),pw=$('pw').value;if(!em||!pw)return msg('lmsg','Escriba correo y contraseña.');
+ msg('lmsg','Conectando…',true);
+ try{const r=await fetch('https://identitytoolkit.googleapis.com/v1/accounts:'+kind+'?key='+CFG.apiKey,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em,password:pw,returnSecureToken:true})});const j=await r.json();
+  if(!r.ok)return msg('lmsg',errAuth(j.error&&j.error.message));
+  setTok(j);store.set('gen_rt',j.refreshToken);store.set('gen_em',em);EMAIL=em;await entrarApp()}catch(e){msg('lmsg','No hay conexión con internet.')}}
+const entrar=()=>auth('signInWithPassword'),crearAdmin=()=>auth('signUp');
+function setTok(j){TOK=j.idToken;EXP=Date.now()+(+(j.expiresIn||3600)-120)*1000;if(j.refreshToken)store.set('gen_rt',j.refreshToken)}
+async function token(){if(TOK&&Date.now()<EXP)return TOK;const rt=store.get('gen_rt');if(!rt)throw new Error('SESION');
+ const r=await fetch('https://securetoken.googleapis.com/v1/token?key='+CFG.apiKey,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=refresh_token&refresh_token='+encodeURIComponent(rt)});const j=await r.json();
+ if(!r.ok)throw new Error('SESION');setTok({idToken:j.id_token,refreshToken:j.refresh_token,expiresIn:j.expires_in});return TOK}
+async function api(method,path,body){const t=await token();const r=await fetch(FS+path,{method,headers:{'Authorization':'Bearer '+t,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
+ if(r.status===204)return {};let j={};try{j=await r.json()}catch(e){}
+ if(!r.ok){const e=new Error((j.error&&j.error.message)||('HTTP '+r.status));e.status=r.status;e.st=j.error&&j.error.status;throw e}return j}
+function errApi(e){if(e.message==='SESION')return 'Su sesión venció. Salga y vuelva a entrar.';if(e.status===403||e.st==='PERMISSION_DENIED')return 'Firebase no le da permiso. Falta pegar las reglas de administrador (archivo REGLAS-ADMIN-GENERADOR.txt) con SU correo.';if(e.status===409||e.st==='ALREADY_EXISTS')return 'ALREADY';return 'Error: '+e.message}
+// ---- conversion de documentos
+const S=v=>({stringValue:String(v)}),B=v=>({booleanValue:!!v}),N=v=>({integerValue:String(v)});
+function dec(d){const f=d.fields||{},g=k=>f[k]||{},sn=decodeURIComponent(d.name.split('/').pop()),dv=[],m=(f.devices&&f.devices.mapValue&&f.devices.mapValue.fields)||{};
+ for(const k in m){const q=(m[k].mapValue&&m[k].mapValue.fields)||{};dv.push({id:k,name:(q.name||{}).stringValue||'Aparato',at:(q.at||{}).stringValue||''})}
+ dv.sort((a,b)=>String(a.at).localeCompare(String(b.at)));
+ return{sn,active:!!g('active').booleanValue,max:+(g('max').integerValue||g('max').doubleValue||1),cli:g('cliente').stringValue||'',nota:g('nota').stringValue||'',owner:g('ownerEmail').stringValue||'',creada:g('creada').stringValue||'',dev:dv}}
+async function cargar(){msg('amsg','');try{let out=[],pt='';do{const j=await api('GET','/licenses?pageSize=300'+(pt?'&pageToken='+encodeURIComponent(pt):''));(j.documents||[]).forEach(d=>out.push(dec(d)));pt=j.nextPageToken||''}while(pt);
+ out.sort((a,b)=>String(b.creada).localeCompare(String(a.creada))||a.sn.localeCompare(b.sn));LIC=out;pintar()}catch(e){const m=errApi(e);msg('amsg',m);if(e.message==='SESION')setTimeout(salir,1500)}}
+function pintar(){const q=($('busca').value||'').trim().toLowerCase();const L=LIC.filter(l=>!q||(l.sn+' '+l.cli+' '+l.owner+' '+l.nota).toLowerCase().includes(q));
+ $('pie').textContent=LIC.length+' licencia(s) en total · '+LIC.filter(l=>l.active).length+' activa(s)';
+ $('lista').innerHTML=L.length?L.map(card).join(''):'<div class="card small">'+(LIC.length?'Nada coincide con la búsqueda.':'Todavía no hay licencias. Genere la primera arriba.')+'</div>'}
+function card(l){const u=l.dev.length,full=u>=l.max,o=OPEN===l.sn;
+ let h='<div class="card lic" data-sn="'+esc(l.sn)+'"><div onclick="abrir(\''+esc(l.sn)+'\')"><div class="top"><span class="sn">'+esc(l.sn)+'</span><span class="pill '+(l.active?'on':'off')+'">'+(l.active?'Activa':'Desactivada')+'</span></div>'
+ +'<div class="meta"><b>'+esc(l.cli||'Sin nombre')+'</b> · aparatos '+u+' de '+l.max+(full?' <span class="pill wn">completo</span>':'')+'<br>Nube: '+(l.owner?esc(l.owner):'<i>aún sin cuenta</i>')+'</div></div>';
+ if(o)h+=det(l);return h+'</div>'}
+function det(l){const s=esc(l.sn);let h='<div class="det">'
+ +'<div class="row"><button class="sm" onclick="copiar(\''+s+'\')">Copiar serial</button><button class="sm sec" onclick="copiarMsg(\''+s+'\')">Copiar mensaje para el cliente</button>'
+ +'<button class="sm '+(l.active?'sec':'')+'" onclick="act(\''+s+'\','+(!l.active)+')">'+(l.active?'Desactivar':'Activar')+'</button></div>'
+ +'<label>Cliente</label><input id="ecli" value="'+esc(l.cli)+'"><label>Nota</label><input id="enota" value="'+esc(l.nota)+'">'
+ +'<div class="row" style="margin-top:8px"><button class="sm sec" onclick="guardarDatos(\''+s+'\')">Guardar nombre y nota</button></div>'
+ +'<label>Aparatos permitidos</label><div class="cnt"><button class="sm sec" onclick="mx(\''+s+'\','+(l.max-1)+')">−</button><b>'+l.max+'</b><button class="sm sec" onclick="mx(\''+s+'\','+(l.max+1)+')">+</button></div>'
+ +'<label>Aparatos que lo usan</label>';
+ h+=l.dev.length?l.dev.map(d=>'<div class="dev"><span>'+esc(d.name)+'<br><span class="small">'+esc(d.at?new Date(d.at).toLocaleString('es-CR'):'')+'</span></span><button class="sm sec" onclick="quitar(\''+s+'\',\''+esc(d.id)+'\')">Quitar</button></div>').join(''):'<div class="small">Ninguno todavía.</div>';
+ h+='<label>Cuenta de la nube</label><div class="row"><span>'+(l.owner?esc(l.owner):'<i>sin cuenta</i>')+'</span>'+(l.owner?'<button class="sm sec" onclick="liberar(\''+s+'\')">Liberar cuenta (el cliente podrá usar otro correo)</button>':'')+'</div>'
+ +'<div class="row" style="margin-top:14px"><button class="sm bad" id="del_'+s+'" onclick="borrar(\''+s+'\')">Borrar licencia</button></div><p class="small">Borrar solo quita la licencia; los datos del cliente en la nube no se borran.</p></div>';return h}
+function abrir(sn){OPEN=OPEN===sn?null:sn;pintar()}
+function ver(sn){return LIC.find(l=>l.sn===sn)}
+async function patch(sn,fields,mask,exists){let q=mask.map(m=>'updateMask.fieldPaths='+encodeURIComponent(m)).join('&');if(exists===false)q+=(q?'&':'')+'currentDocument.exists=false';
+ return api('PATCH','/licenses/'+encodeURIComponent(sn)+(q?'?'+q:''),{fields})}
+async function run(f,ok){msg('amsg','');try{await f();if(ok)msg('amsg',ok,true);await cargar()}catch(e){const m=errApi(e);msg('amsg',m);window.scrollTo(0,0)}}
+function codigo(){const a=new Uint32Array(12);crypto.getRandomValues(a);let s='';for(let i=0;i<12;i++){s+=AL[a[i]%AL.length];if(i%4===3&&i<11)s+='-'}return 'PESC-'+s}
+async function generar(){const cli=$('ncli').value.trim(),max=Math.max(1,parseInt($('nmax').value)||1),nota=$('nnota').value.trim();
+ if(!cli)return msg('amsg','Escriba el nombre del cliente o empresa.');
+ $('bgen').disabled=true;msg('amsg','');
+ try{let sn='',ok=false;for(let i=0;i<5&&!ok;i++){sn=codigo();try{await patch(sn,{active:B(true),max:N(max),devices:{mapValue:{fields:{}}},cliente:S(cli),nota:S(nota),creada:S(new Date().toISOString())},['active','max','devices','cliente','nota','creada'],false);ok=true}catch(e){if(errApi(e)!=='ALREADY')throw e}}
+  if(!ok)throw new Error('No se pudo generar un serial único. Intente otra vez.');
+  $('ncli').value='';$('nnota').value='';$('nmax').value='1';OPEN=sn;await cargar();msg('amsg','Serial creado: '+sn,true);window.scrollTo(0,0)}
+ catch(e){msg('amsg',errApi(e)==='ALREADY'?'Ese serial ya existe.':errApi(e))}finally{$('bgen').disabled=false}}
+const act=(sn,v)=>run(()=>patch(sn,{active:B(v)},['active']),v?'Licencia activada.':'Licencia desactivada.');
+const mx=(sn,n)=>{if(n<1)return;run(()=>patch(sn,{max:N(n)},['max']))};
+const guardarDatos=sn=>run(()=>patch(sn,{cliente:S($('ecli').value.trim()),nota:S($('enota').value.trim())},['cliente','nota']),'Guardado.');
+const quitar=(sn,id)=>run(()=>patch(sn,{}, ['devices.'+id]),'Aparato quitado: ya hay un cupo libre.');
+const liberar=sn=>run(()=>patch(sn,{},['ownerEmail']),'Cuenta liberada. El cliente podrá ligar otro correo al activar.');
+let delArm=null;
+function borrar(sn){const b=$('del_'+sn);if(delArm!==sn){delArm=sn;b.textContent='Toque otra vez para borrar';setTimeout(()=>{if(delArm===sn){delArm=null;pintar()}},4000);return}delArm=null;OPEN=null;run(()=>api('DELETE','/licenses/'+encodeURIComponent(sn)),'Licencia borrada.')}
+function copiar(t,ok){const f=()=>{const a=document.createElement('textarea');a.value=t;a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);a.select();try{document.execCommand('copy')}catch(e){}a.remove()};
+ try{navigator.clipboard.writeText(t).catch(f)}catch(e){f()}msg('amsg',ok||'Copiado: '+t,true);window.scrollTo(0,0)}
+function copiarMsg(sn){const l=ver(sn),url=location.origin.indexOf('http')===0?location.origin.replace(/\/generador.*$/,'')+'/':'https://pescaderia-campos-pacific-pages-dev.jbilly1987.workers.dev/';
+ copiar('Su sistema de pescadería está listo.\n\nAbra: '+url+'\nEn la primera pantalla escriba:\n• Serial: '+sn+'\n• Correo de su empresa (el que usted elija)\n• Una contraseña (6 o más caracteres)\nY toque Activar.\n\nEn los demás aparatos de su negocio escriba el mismo serial, correo y contraseña.'+(l&&l.max?'\nAparatos permitidos: '+l.max+'.':''),'Mensaje copiado. Péguelo en WhatsApp.')}
+async function entrarApp(){$('login').hidden=true;$('app').hidden=false;$('who').textContent='Administrador: '+EMAIL;await cargar()}
+function salir(){store.del('gen_rt');TOK=null;LIC=[];OPEN=null;$('app').hidden=true;$('login').hidden=false;$('pw').value='';msg('lmsg','')}
+(async()=>{$('em').value=store.get('gen_em')||'';EMAIL=store.get('gen_em')||'';
+ if(store.get('gen_rt')){try{await token();await entrarApp();return}catch(e){store.del('gen_rt')}}
+ $('login').hidden=false})();
+if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script></body></html>
