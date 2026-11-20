@@ -49,7 +49,7 @@ button:disabled{opacity:.5}
  </div>
 </div>
 <div id="app" hidden>
- <div class="top"><div><h1>Licencias</h1><p class="sub" id="who"></p></div><div class="row"><button class="sec sm" onclick="cargar()">Actualizar</button><button class="sec sm" onclick="salir()">Salir</button></div></div>
+ <div class="top"><div><h1>Licencias</h1><p class="sub" id="who"></p></div><div class="row"><button class="sec sm" onclick="cargar()">Actualizar</button><button class="sec sm" onclick="listaVenc()">Copiar vencimientos</button><button class="sec sm" onclick="salir()">Salir</button></div></div>
  <div id="amsg"></div>
  <div class="card">
   <h2>Nueva licencia</h2>
@@ -119,6 +119,7 @@ function det(l){const s=esc(l.sn);let h='<div class="det">'
  +'<div class="row" style="margin-top:6px"><span class="small">Sumar:</span><button class="sm" onclick="renov(\''+s+'\',1)">+1 mes</button><button class="sm" onclick="renov(\''+s+'\',3)">+3</button><button class="sm" onclick="renov(\''+s+'\',6)">+6</button><button class="sm" onclick="renov(\''+s+'\',12)">+12</button></div>'
  +'<div class="row" style="margin-top:6px"><input id="rmes" type="number" min="1" max="240" value="2" inputmode="numeric" style="max-width:90px"><button class="sm sec" onclick="renov(\''+s+'\',parseInt($(\'rmes\').value)||0)">Sumar esos meses</button></div>'
  +'<div class="row" style="margin-top:6px"><input id="fexp" type="date" value="'+esc(l.exp||'')+'" style="max-width:170px"><button class="sm sec" onclick="fijarExp(\''+s+'\')">Fijar esta fecha</button><button class="sm sec" onclick="sinExp(\''+s+'\')">Quitar vencimiento</button></div>'
+ +'<div class="row" style="margin:6px 0"><button class="sm sec" onclick="avisoRenov(\''+s+'\')">Copiar aviso de renovación para el cliente</button></div>'
  +'<p class="small">Si la licencia sigue vigente, los meses se suman a la fecha actual de vencimiento; si ya venció, cuentan desde hoy.</p>'
  +'<label>Aparatos permitidos</label><div class="cnt"><button class="sm sec" onclick="mx(\''+s+'\','+(l.max-1)+')">−</button><b>'+l.max+'</b><button class="sm sec" onclick="mx(\''+s+'\','+(l.max+1)+')">+</button></div>'
  +'<label>Aparatos que lo usan</label>';
@@ -136,6 +137,14 @@ function sumMes(base,n){const p=base.split('-').map(Number),d=new Date(p[0],p[1]
 function dias(x){if(!x)return null;return Math.round((new Date(x+'T00:00:00')-new Date(hoy()+'T00:00:00'))/864e5)}
 function fdate(x){const p=x.split('-');return p[2]+'/'+p[1]+'/'+p[0]}
 function expPill(l){const d=dias(l.exp);if(d===null)return '<span class="pill" style="background:var(--line);color:var(--ink)">Sin vencimiento</span>';if(d<0)return '<span class="pill off">Vencida '+fdate(l.exp)+'</span>';if(d<=10)return '<span class="pill wn">Vence '+fdate(l.exp)+' · '+(d===0?'hoy':d+' día'+(d===1?'':'s'))+'</span>';return '<span class="pill on">Vence '+fdate(l.exp)+' · '+d+' días</span>'}
+function avisoRenov(sn){const l=ver(sn);if(!l)return;const d=dias(l.exp);let tx;
+ if(!l.exp)return msg('amsg','Esa licencia no tiene vencimiento.');
+ if(d<0)tx='Hola'+(l.cli?', '+l.cli:'')+'. Su licencia del sistema de pescadería venció el '+fdate(l.exp)+'. Para volver a usarlo, renueve su licencia y se la activo enseguida. Sus datos están guardados y no se pierden.';
+ else tx='Hola'+(l.cli?', '+l.cli:'')+'. Le recuerdo que su licencia del sistema de pescadería '+(d===0?'vence HOY':'vence el '+fdate(l.exp)+' (faltan '+d+' día'+(d===1?'':'s')+')')+'. Para renovarla y no perder el acceso, respóndame este mensaje.';
+ copiar(tx,'Aviso copiado. Péguelo en WhatsApp.')}
+function listaVenc(){const A=LIC.filter(l=>l.exp&&dias(l.exp)<=10).sort((a,b)=>dias(a.exp)-dias(b.exp));
+ if(!A.length)return msg('amsg','No hay licencias vencidas ni por vencer en los próximos 10 días.',true);
+ copiar('Licencias por vencer o vencidas ('+fdate(hoy())+'):\n'+A.map(l=>'• '+(l.cli||l.sn)+' — '+(dias(l.exp)<0?'VENCIDA el '+fdate(l.exp):dias(l.exp)===0?'vence HOY':'vence '+fdate(l.exp)+' (faltan '+dias(l.exp)+')')+' — '+l.sn).join('\n'),A.length+' licencia(s) copiadas.')}
 function codigo(){const a=new Uint32Array(12);crypto.getRandomValues(a);let s='';for(let i=0;i<12;i++){s+=AL[a[i]%AL.length];if(i%4===3&&i<11)s+='-'}return 'PESC-'+s}
 async function generar(){const cli=$('ncli').value.trim(),max=Math.max(1,parseInt($('nmax').value)||1),nota=$('nnota').value.trim(),mes=Math.max(0,Math.min(240,parseInt($('nmes').value)||0));
  if(!cli)return msg('amsg','Escriba el nombre del cliente o empresa.');
