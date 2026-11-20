@@ -44,6 +44,7 @@ button:disabled{opacity:.5}
   <label>Correo de administrador</label><input id="em" type="email" autocomplete="username" autocapitalize="off">
   <label>Contraseña</label><input id="pw" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')entrar()">
   <div class="row" style="margin-top:14px"><button onclick="entrar()">Entrar</button><button class="sec" onclick="crearAdmin()">Crear cuenta de administrador (primera vez)</button></div>
+  <p style="margin:12px 0 4px"><a href="#" onclick="olvide();return false" style="color:var(--pri);font-weight:700">¿Olvidó su contraseña? Le enviamos un correo para cambiarla</a></p>
   <p class="small">Si ya usa ese correo en el sistema de la pescadería, entre con la misma contraseña.</p>
  </div>
 </div>
@@ -74,6 +75,12 @@ const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},se
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function msg(id,t,ok){$(id).innerHTML=t?'<div class="msg '+(ok?'o':'e')+'">'+esc(t)+'</div>':''}
 function errAuth(c){const m={EMAIL_NOT_FOUND:'Ese correo no tiene cuenta. Use «Crear cuenta de administrador» si es la primera vez.',INVALID_PASSWORD:'Contraseña incorrecta.',INVALID_LOGIN_CREDENTIALS:'Correo o contraseña incorrectos.',EMAIL_EXISTS:'Ese correo ya tiene cuenta: toque «Entrar».',WEAK_PASSWORD:'La contraseña debe tener al menos 6 caracteres.',INVALID_EMAIL:'El correo no es válido.',OPERATION_NOT_ALLOWED:'En Firebase falta habilitar el acceso con correo y contraseña.',TOO_MANY_ATTEMPTS_TRY_LATER:'Demasiados intentos. Espere unos minutos.',USER_DISABLED:'Esa cuenta está desactivada.'};const k=String(c||'').split(' ')[0];return m[k]||('No se pudo entrar: '+c)}
+async function olvide(){const em=$('em').value.trim().toLowerCase();if(!em||em.indexOf('@')<1)return msg('lmsg','Escriba arriba su correo de administrador y toque de nuevo «¿Olvidó su contraseña?».');
+ msg('lmsg','Enviando correo…',true);
+ try{const r=await fetch('https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key='+CFG.apiKey,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({requestType:'PASSWORD_RESET',email:em})});const j=await r.json();
+  if(!r.ok){const c=String((j.error&&j.error.message)||'');return msg('lmsg',/EMAIL_NOT_FOUND/.test(c)?'Ese correo no tiene cuenta. Use «Crear cuenta de administrador» si es la primera vez.':/TOO_MANY/.test(c)?'Demasiados intentos. Espere unos minutos.':/INVALID_EMAIL/.test(c)?'El correo no es válido.':'No se pudo enviar el correo: '+c)}
+  msg('lmsg','Listo. Le enviamos un correo a '+em+' con un enlace para elegir una contraseña nueva. Revise también Spam o Correo no deseado. Después vuelva aquí y entre con la nueva.',true)}
+ catch(e){msg('lmsg','No hay conexión con internet.')}}
 async function auth(kind){const em=$('em').value.trim().toLowerCase(),pw=$('pw').value;if(!em||!pw)return msg('lmsg','Escriba correo y contraseña.');
  msg('lmsg','Conectando…',true);
  try{const r=await fetch('https://identitytoolkit.googleapis.com/v1/accounts:'+kind+'?key='+CFG.apiKey,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em,password:pw,returnSecureToken:true})});const j=await r.json();
