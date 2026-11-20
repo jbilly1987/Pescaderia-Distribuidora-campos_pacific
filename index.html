@@ -1372,7 +1372,7 @@ function licNorm(x){return String(x||'').trim().toUpperCase().replace(/\s+/g,'')
 function licDevId(){let d=null;try{d=localStorage.getItem('pesc_dev')}catch(e){}if(!d){d='D'+Math.random().toString(36).slice(2,10)+Date.now().toString(36);try{localStorage.setItem('pesc_dev',d)}catch(e){}}return d}
 function licDevName(){const u=navigator.userAgent||'';const os=(/Android/.test(u)?'Android':/iPhone|iPad/.test(u)?'iPhone/iPad':/Windows/.test(u)?'Windows':/Mac/.test(u)?'Mac':/Linux/.test(u)?'Linux':'Aparato');const br=(/Edg\//.test(u)?'Edge':/Chrome\//.test(u)?'Chrome':/Safari\//.test(u)?'Safari':/Firefox\//.test(u)?'Firefox':'');return os+(br?' · '+br:'')+' · '+new Date().toLocaleDateString('es-CR')}
 function licUrl(sn,mask){const c=fbCfg();return 'https://firestore.googleapis.com/v1/projects/'+c.projectId+'/databases/(default)/documents/licenses/'+encodeURIComponent(sn)+'?key='+encodeURIComponent(c.apiKey)+(mask?'&updateMask.fieldPaths='+encodeURIComponent('devices.'+mask):'')}
-async function licGet(sn){try{const r=await fetch(licUrl(sn));if(r.status===404)return{st:'none'};if(r.status===401||r.status===403)return{st:'rules'};if(!r.ok)return{st:'net'};const j=await r.json(),f=j.fields||{},dv={},m=(f.devices&&f.devices.mapValue&&f.devices.mapValue.fields)||{};for(const k in m){const q=(m[k].mapValue&&m[k].mapValue.fields)||{};dv[k]={name:(q.name||{}).stringValue||'',at:(q.at||{}).stringValue||''}}return{st:'ok',active:!!(f.active&&f.active.booleanValue),max:Math.max(1,+((f.max&&(f.max.integerValue||f.max.doubleValue))||1)),owner:((f.ownerEmail&&f.ownerEmail.stringValue)||'').toLowerCase(),devices:dv}}catch(e){return{st:'net'}}}
+async function licGet(sn){try{const r=await fetch(licUrl(sn));if(r.status===404)return{st:'none'};if(r.status===401||r.status===403)return{st:'rules'};if(!r.ok)return{st:'net'};const j=await r.json(),f=j.fields||{},dv={},m=(f.devices&&f.devices.mapValue&&f.devices.mapValue.fields)||{};for(const k in m){const q=(m[k].mapValue&&m[k].mapValue.fields)||{};dv[k]={name:(q.name||{}).stringValue||'',at:(q.at||{}).stringValue||''}}return{st:'ok',active:!!(f.active&&f.active.booleanValue),max:Math.max(1,+((f.max&&(f.max.integerValue||f.max.doubleValue))||1)),owner:((f.ownerEmail&&f.ownerEmail.stringValue)||'').toLowerCase(),exp:((f.exp&&f.exp.stringValue)||''),devices:dv}}catch(e){return{st:'net'}}}
 async function licPut(sn,id,name){try{const body={fields:{devices:{mapValue:{fields:{[id]:{mapValue:{fields:{name:{stringValue:name},at:{stringValue:new Date().toISOString()}}}}}}}}};const r=await fetch(licUrl(sn,id),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return r.ok}catch(e){return false}}
 async function licDel(sn,id){try{const r=await fetch(licUrl(sn,id),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{}})});return r.ok}catch(e){return false}}
 function licMsg(m){const e=document.querySelector('#licBox .licMsg');if(e)e.textContent=m}
@@ -1382,22 +1382,22 @@ async function licAct(){const inp=document.getElementById('licIn'),sn=licNorm(in
  if(g.st==='none')return licMsg('Ese serial no existe. Revise que esté bien escrito.');
  if(g.st==='rules')return licMsg('Falta permitir las licencias en las reglas de Firebase.');
  if(g.st==='net')return licMsg('No hay conexión con internet. Conéctese para activar.');
- if(!g.active)return licMsg('Este serial está desactivado.');{const pm=tnPre(sn);if(pm)return licMsg(pm)}
+ if(!g.active)return licMsg('Este serial está desactivado.');if(licExpOver(g.exp))return licMsg('Esta licencia venció el '+fmtDate(g.exp)+'. Pida la renovación a quien le entregó el sistema.');{const pm=tnPre(sn);if(pm)return licMsg(pm)}
  const id=licDevId();window.__licPrev=licLoad();
  if(!g.devices[id]){if(Object.keys(g.devices).length>=g.max)return licMsg('Este serial ya está en uso en '+g.max+' aparato(s), que es el máximo permitido.');if(!(await licPut(sn,id,licDevName())))return licMsg('No se pudo registrar este aparato. Intente de nuevo.')}
- licSave({s:sn,d:id,t:Date.now()});if(tnApply(sn,window.__licPrev))return;licHide();try{notify("✅ Licencia activada")}catch(e){}}
+ licSave({s:sn,d:id,t:Date.now(),x:g.exp||''});if(tnApply(sn,window.__licPrev))return;licHide();try{notify("✅ Licencia activada")}catch(e){}}
 async function licBg(l){if(!LIC_ON||!l)return;const g=await licGet(l.s);
- if(g.st==='net'||g.st==='rules'){if(Date.now()-l.t>LIC_GRACE)licShow('Hace más de 30 días que no se verifica la licencia. Conéctese a internet.',true);return}
+ if(g.st==='net'||g.st==='rules'){if(licExpBlock(l.x))return;if(Date.now()-l.t>LIC_GRACE)licShow('Hace más de 30 días que no se verifica la licencia. Conéctese a internet.',true);else licExpBar(l.x);return}
  if(g.st==='none'||!g.active)return licShow('Este serial está desactivado. Comuníquese con quien le entregó el sistema.');
  if(!g.devices[l.d])return licShow('Este aparato fue quitado del serial. Escríbalo de nuevo para activarlo.');
- l.t=Date.now();licSave(l);licHide()}
+ l.t=Date.now();l.x=g.exp||'';licSave(l);if(licExpBlock(l.x))return;licExpBar(l.x);licHide()}
 function licRetry(){licMsg('Verificando…');licBg(licLoad())}
 function licInit(){if(!LIC_ON)return;const l=licLoad();if(!l)licShow('');else licBg(l);setInterval(()=>{const x=licLoad();if(x)licBg(x)},900000)}
 async function licFill(){const e=document.getElementById('licInfo');if(!e)return;const l=licLoad();if(!l){e.textContent='Sin licencia activada.';return}
  const mask=l.s.length>10?l.s.slice(0,5)+'••••-••••-'+l.s.slice(-4):l.s,g=await licGet(l.s);
  if(g.st!=='ok'){e.innerHTML='Serial <b>'+esc(mask)+'</b>. No se pudo consultar ahora. Última verificación: '+new Date(l.t).toLocaleDateString('es-CR')+'.';return}
  const ds=Object.entries(g.devices),adm=(typeof _isAdmin==='function')&&_isAdmin();
- e.innerHTML='Serial <b>'+esc(mask)+'</b> · '+(g.active?'Activo':'Desactivado')+'<br>Aparatos usados: <b>'+ds.length+' de '+g.max+'</b>'+ds.map(([id,v])=>'<div style="margin-top:6px">• '+esc(v.name||id)+(id===l.d?' <b>(este aparato)</b>':'')+(adm&&id!==l.d?' <button class="small secondary" onclick="licDelAsk(\''+esc(id)+'\')">Quitar</button>':'')+'</div>').join('')}
+ e.innerHTML='Serial <b>'+esc(mask)+'</b> · '+(g.active?'Activo':'Desactivado')+licExpTxt(g.exp)+'<br>Aparatos usados: <b>'+ds.length+' de '+g.max+'</b>'+ds.map(([id,v])=>'<div style="margin-top:6px">• '+esc(v.name||id)+(id===l.d?' <b>(este aparato)</b>':'')+(adm&&id!==l.d?' <button class="small secondary" onclick="licDelAsk(\''+esc(id)+'\')">Quitar</button>':'')+'</div>').join('')}
 async function licDelAsk(id){const l=licLoad();if(!l||id===l.d)return;if(!(await ask('¿Quitar ese aparato del serial? Dejará de funcionar hasta que vuelvan a escribir el serial.',{yes:'Sí, quitar',no:'Cancelar'})))return;await licDel(l.s,id);licFill()}
 function licCard(){if(!LIC_ON)return '';setTimeout(licFill,60);return '<div class="card panel"><h2>🔑 Licencia del sistema</h2><div id="licInfo" class="sub">Cargando…</div><div class="sub" style="font-size:11px;opacity:.7;margin-top:6px">Versión del sistema: '+(typeof BUILD!=='undefined'?BUILD:'')+'</div></div>'}
 {const _cl=configPage;configPage=function(){return _cl()+licCard()}}
@@ -1540,7 +1540,7 @@ licAct=async function(noCloud){
  if(g.st==='none')return licMsg('Ese serial no existe. Revise que esté bien escrito.');
  if(g.st==='rules')return licMsg('Falta permitir las licencias en las reglas de Firebase.');
  if(g.st==='net')return licMsg('No hay conexión con internet. Conéctese para activar.');
- if(!g.active)return licMsg('Este serial está desactivado.');
+ if(!g.active)return licMsg('Este serial está desactivado.');if(licExpOver(g.exp))return licMsg('Esta licencia venció el '+fmtDate(g.exp)+'. Pida la renovación a quien le entregó el sistema.');
  {const pm=tnPre(sn);if(pm)return licMsg(pm)}
  const id=licDevId();window.__licPrev=cur;
  if(!g.devices[id]&&Object.keys(g.devices).length>=g.max)return licMsg('Este serial ya está en uso en '+g.max+' aparato(s), que es el máximo permitido.');
@@ -1557,7 +1557,7 @@ licAct=async function(noCloud){
    if(!ok){try{await A.signOut()}catch(_){}return licMsg('Este serial ya pertenece a otra cuenta de la nube. Use el correo con el que se creó.')}
    cloud=true}catch(e){return licMsg(fbErr(e))}}
  if(!g.devices[id]){if(!(await licPut(sn,id,licDevName())))return licMsg('No se pudo registrar este aparato. Intente de nuevo.')}
- licSave({s:sn,d:id,t:Date.now()});
+ licSave({s:sn,d:id,t:Date.now(),x:g.exp||''});
  if(cloud){try{localStorage.setItem('pesc_autosync','1')}catch(e){}}
  window.__keepAuth=cloud;if(tnApply(sn,window.__licPrev))return;
  licHide();try{notify("✅ Licencia activada")}catch(e){}
@@ -1568,7 +1568,7 @@ async function tnAutoSync(){try{localStorage.removeItem('pesc_autosync')}catch(e
 window.addEventListener('load',()=>setTimeout(async()=>{try{if(!localStorage.getItem('pesc_autosync')||!window.firebase||typeof LIC_ON==='undefined'||!LIC_ON||!licLoad())return;fbReady();const u=await new Promise(r=>{const off=firebase.auth().onAuthStateChanged(x=>{off();r(x)})});if(u)await tnAutoSync();else localStorage.removeItem('pesc_autosync')}catch(e){}},2500));
 
 /* ===== fix45: aviso y aplicacion de actualizaciones (todos los clientes) ===== */
-const BUILD='20261119-0511';
+const BUILD='20261120-0104';
 function updBanner(v){if(document.getElementById('updBar'))return;const d=document.createElement('div');d.id='updBar';d.setAttribute('role','alert');
  d.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:99999;max-width:460px;margin:0 auto;background:#0f6e8c;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 8px 28px rgba(0,0,0,.35);font:600 14px/1.35 system-ui,sans-serif;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
  d.innerHTML='<span style="flex:1;min-width:180px">🔄 Hay una versión nueva del sistema.<br><small style="font-weight:400;opacity:.9">Si tiene una venta a medias, termínela y luego actualice.</small></span><button id="updGo" style="background:#f5c20c;color:#14232d;border:0;border-radius:9px;padding:9px 14px;font:700 14px system-ui,sans-serif">Actualizar ahora</button><button id="updLater" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:9px;padding:9px 12px;font:600 13px system-ui,sans-serif">Después</button>';
@@ -1653,5 +1653,17 @@ function scanAddProduct(c){const k=String(c).trim().toLowerCase(),p=db.products.
 {const _sp=salesPage;salesPage=function(){return _sp().replace('<button class="secondary small" onclick="openSearch()">🔍 Buscar factura</button>','<button class="secondary small keep" onclick="scanOpen(scanAddProduct,{multi:true})">📷 Escanear</button><button class="secondary small" onclick="openSearch()">🔍 Buscar factura</button>')}}
 {const _pg=productsPage;productsPage=function(){return _pg().replace('<div class="field"><label>SKU / Código</label><input name="code" placeholder="Ej. PES-001"></div>','<div class="field"><label>SKU / Código</label><div style="display:flex;gap:6px"><input name="code" placeholder="Ej. PES-001" style="flex:1;min-width:0"><button type="button" class="secondary small" title="Leer con la cámara" onclick="scanOpen(function(c){var i=document.querySelector(\'#prodForm [name=code]\');if(i)i.value=c;return \'✅ \'+c},{multi:false})">📷</button></div></div>')}}
 document.addEventListener('keydown',e=>{if(e.key!=='Enter'||!e.target||e.target.id!=='posSearch')return;const k=String(e.target.value||'').trim().toLowerCase();if(!k)return;const p=db.products.find(x=>x.code&&String(x.code).trim().toLowerCase()===k);if(p){e.preventDefault();addCart(p.id);e.target.value='';try{filterPos()}catch(_){}}});
+
+/* ===== fix51: vencimiento de licencias (meses que asigna el administrador desde el generador) ===== */
+function licDays(x){if(!x||!/^\d{4}-\d{2}-\d{2}$/.test(x))return null;return Math.round((new Date(x+'T00:00:00')-new Date(today()+'T00:00:00'))/864e5)}
+function licExpOver(x){const d=licDays(x);return d!==null&&d<0}
+function licExpTxt(x){const d=licDays(x);if(d===null)return '<br>Vence: <b>sin fecha de vencimiento</b>';return '<br>Vence: <b>'+fmtDate(x)+'</b> · '+(d<0?'<b style="color:#c0392b">vencida</b>':d===0?'<b style="color:#b45309">vence hoy</b>':'faltan '+d+' día'+(d===1?'':'s'))}
+function licExpBar(x){const old=document.getElementById('expBar');const d=licDays(x);if(d===null||d<0||d>10){if(old)old.remove();return}
+ try{if(localStorage.getItem('pesc_expbar')===today())return}catch(e){}
+ if(old)old.remove();const b=document.createElement('div');b.id='expBar';b.setAttribute('role','alert');
+ b.style.cssText='position:fixed;left:0;right:0;top:0;z-index:99990;padding:calc(8px + env(safe-area-inset-top,0px)) 12px 8px;background:#f5c20c;color:#14232d;font:700 14px/1.35 system-ui,sans-serif;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;text-align:center';
+ b.innerHTML='<span>⚠️ Su licencia '+(d===0?'vence HOY':'vence en '+d+' día'+(d===1?'':'s')+' ('+fmtDate(x)+')')+'. Comuníquese para renovarla y no perder el acceso.</span><button style="background:#14232d;color:#fff;border:0;border-radius:8px;padding:6px 12px;font:700 13px system-ui,sans-serif">Entendido</button>';
+ document.body.appendChild(b);b.querySelector('button').onclick=()=>{b.remove();try{localStorage.setItem('pesc_expbar',today())}catch(e){}}}
+function licExpBlock(x){if(!licExpOver(x))return false;licShow('Su licencia venció el '+fmtDate(x)+'. Sus datos están guardados y no se pierden. Comuníquese con quien le entregó el sistema para renovarla y luego toque Reintentar.',true);return true}
 (async()=>{await bootStore();syncLoadMeta();await load();gate();if(document.readyState==='complete')syncStart();else window.addEventListener('load',()=>syncStart());setTimeout(lowCheck,3500);setTimeout(backupCheck,9000);setInterval(backupCheck,900000);setTimeout(cobroCheck,6500);setTimeout(fixedRun,4000);setInterval(fixedRun,3600000);setTimeout(resumenCheck,12000);setInterval(resumenCheck,900000);try{themeTick();setInterval(themeTick,60000)}catch(e){}setTimeout(fxApply,3000);setInterval(fxApply,10800000);setTimeout(expCheck,8500);setInterval(expCheck,900000);setTimeout(badgeCobro,2500);setInterval(badgeCobro,300000);setInterval(cobroCheck,900000);setTimeout(cbkRun,25000);setInterval(cbkRun,1800000)})();
 </script></body></html>

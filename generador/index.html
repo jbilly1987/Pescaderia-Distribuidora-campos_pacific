@@ -53,7 +53,9 @@ button:disabled{opacity:.5}
  <div class="card">
   <h2>Nueva licencia</h2>
   <div class="row"><div style="flex:2;min-width:160px"><label>Cliente / empresa</label><input id="ncli" placeholder="Ej. Pescadería El Puerto"></div>
-  <div style="flex:1;min-width:110px"><label>Aparatos permitidos</label><input id="nmax" type="number" min="1" value="1" inputmode="numeric"></div></div>
+  <div style="flex:1;min-width:110px"><label>Aparatos permitidos</label><input id="nmax" type="number" min="1" value="1" inputmode="numeric"></div>
+  <div style="flex:1;min-width:130px"><label>Meses de licencia</label><input id="nmes" type="number" min="0" max="240" value="1" inputmode="numeric"></div></div>
+  <div class="row" style="margin-top:6px"><span class="small">Meses:</span><button class="sm sec" onclick="$('nmes').value=1">1</button><button class="sm sec" onclick="$('nmes').value=3">3</button><button class="sm sec" onclick="$('nmes').value=6">6</button><button class="sm sec" onclick="$('nmes').value=12">12</button><button class="sm sec" onclick="$('nmes').value=0">Sin vencimiento</button></div>
   <label>Nota (opcional)</label><input id="nnota" placeholder="Teléfono, precio, fecha de pago…">
   <div class="row" style="margin-top:12px"><button id="bgen" onclick="generar()">Generar serial</button></div>
  </div>
@@ -91,21 +93,26 @@ const S=v=>({stringValue:String(v)}),B=v=>({booleanValue:!!v}),N=v=>({integerVal
 function dec(d){const f=d.fields||{},g=k=>f[k]||{},sn=decodeURIComponent(d.name.split('/').pop()),dv=[],m=(f.devices&&f.devices.mapValue&&f.devices.mapValue.fields)||{};
  for(const k in m){const q=(m[k].mapValue&&m[k].mapValue.fields)||{};dv.push({id:k,name:(q.name||{}).stringValue||'Aparato',at:(q.at||{}).stringValue||''})}
  dv.sort((a,b)=>String(a.at).localeCompare(String(b.at)));
- return{sn,active:!!g('active').booleanValue,max:+(g('max').integerValue||g('max').doubleValue||1),cli:g('cliente').stringValue||'',nota:g('nota').stringValue||'',owner:g('ownerEmail').stringValue||'',creada:g('creada').stringValue||'',dev:dv}}
+ return{sn,active:!!g('active').booleanValue,max:+(g('max').integerValue||g('max').doubleValue||1),cli:g('cliente').stringValue||'',nota:g('nota').stringValue||'',owner:g('ownerEmail').stringValue||'',creada:g('creada').stringValue||'',exp:g('exp').stringValue||'',dev:dv}}
 async function cargar(){msg('amsg','');try{let out=[],pt='';do{const j=await api('GET','/licenses?pageSize=300'+(pt?'&pageToken='+encodeURIComponent(pt):''));(j.documents||[]).forEach(d=>out.push(dec(d)));pt=j.nextPageToken||''}while(pt);
  out.sort((a,b)=>String(b.creada).localeCompare(String(a.creada))||a.sn.localeCompare(b.sn));LIC=out;pintar()}catch(e){const m=errApi(e);msg('amsg',m);if(e.message==='SESION')setTimeout(salir,1500)}}
 function pintar(){const q=($('busca').value||'').trim().toLowerCase();const L=LIC.filter(l=>!q||(l.sn+' '+l.cli+' '+l.owner+' '+l.nota).toLowerCase().includes(q));
- $('pie').textContent=LIC.length+' licencia(s) en total · '+LIC.filter(l=>l.active).length+' activa(s)';
+ $('pie').textContent=LIC.length+' licencia(s) en total · '+LIC.filter(l=>l.active).length+' activa(s)'+(()=>{const v=LIC.filter(l=>dias(l.exp)!==null&&dias(l.exp)<0).length,p=LIC.filter(l=>dias(l.exp)!==null&&dias(l.exp)>=0&&dias(l.exp)<=10).length;return (p?' · '+p+' por vencer':'')+(v?' · '+v+' vencida(s)':'')})();
  $('lista').innerHTML=L.length?L.map(card).join(''):'<div class="card small">'+(LIC.length?'Nada coincide con la búsqueda.':'Todavía no hay licencias. Genere la primera arriba.')+'</div>'}
 function card(l){const u=l.dev.length,full=u>=l.max,o=OPEN===l.sn;
  let h='<div class="card lic" data-sn="'+esc(l.sn)+'"><div onclick="abrir(\''+esc(l.sn)+'\')"><div class="top"><span class="sn">'+esc(l.sn)+'</span><span class="pill '+(l.active?'on':'off')+'">'+(l.active?'Activa':'Desactivada')+'</span></div>'
- +'<div class="meta"><b>'+esc(l.cli||'Sin nombre')+'</b> · aparatos '+u+' de '+l.max+(full?' <span class="pill wn">completo</span>':'')+'<br>Nube: '+(l.owner?esc(l.owner):'<i>aún sin cuenta</i>')+'</div></div>';
+ +'<div class="meta"><b>'+esc(l.cli||'Sin nombre')+'</b> · aparatos '+u+' de '+l.max+(full?' <span class="pill wn">completo</span>':'')+'<br>'+expPill(l)+'<br>Nube: '+(l.owner?esc(l.owner):'<i>aún sin cuenta</i>')+'</div></div>';
  if(o)h+=det(l);return h+'</div>'}
 function det(l){const s=esc(l.sn);let h='<div class="det">'
  +'<div class="row"><button class="sm" onclick="copiar(\''+s+'\')">Copiar serial</button><button class="sm sec" onclick="copiarMsg(\''+s+'\')">Copiar mensaje para el cliente</button>'
  +'<button class="sm '+(l.active?'sec':'')+'" onclick="act(\''+s+'\','+(!l.active)+')">'+(l.active?'Desactivar':'Activar')+'</button></div>'
  +'<label>Cliente</label><input id="ecli" value="'+esc(l.cli)+'"><label>Nota</label><input id="enota" value="'+esc(l.nota)+'">'
  +'<div class="row" style="margin-top:8px"><button class="sm sec" onclick="guardarDatos(\''+s+'\')">Guardar nombre y nota</button></div>'
+ +'<label>Vencimiento de la licencia</label><div class="small">'+(l.exp?'Hasta el <b>'+fdate(l.exp)+'</b> ('+(dias(l.exp)<0?'vencida hace '+(-dias(l.exp))+' día(s)':dias(l.exp)===0?'vence hoy':'faltan '+dias(l.exp)+' días')+')':'Sin vencimiento: no se bloquea nunca.')+'</div>'
+ +'<div class="row" style="margin-top:6px"><span class="small">Sumar:</span><button class="sm" onclick="renov(\''+s+'\',1)">+1 mes</button><button class="sm" onclick="renov(\''+s+'\',3)">+3</button><button class="sm" onclick="renov(\''+s+'\',6)">+6</button><button class="sm" onclick="renov(\''+s+'\',12)">+12</button></div>'
+ +'<div class="row" style="margin-top:6px"><input id="rmes" type="number" min="1" max="240" value="2" inputmode="numeric" style="max-width:90px"><button class="sm sec" onclick="renov(\''+s+'\',parseInt($(\'rmes\').value)||0)">Sumar esos meses</button></div>'
+ +'<div class="row" style="margin-top:6px"><input id="fexp" type="date" value="'+esc(l.exp||'')+'" style="max-width:170px"><button class="sm sec" onclick="fijarExp(\''+s+'\')">Fijar esta fecha</button><button class="sm sec" onclick="sinExp(\''+s+'\')">Quitar vencimiento</button></div>'
+ +'<p class="small">Si la licencia sigue vigente, los meses se suman a la fecha actual de vencimiento; si ya venció, cuentan desde hoy.</p>'
  +'<label>Aparatos permitidos</label><div class="cnt"><button class="sm sec" onclick="mx(\''+s+'\','+(l.max-1)+')">−</button><b>'+l.max+'</b><button class="sm sec" onclick="mx(\''+s+'\','+(l.max+1)+')">+</button></div>'
  +'<label>Aparatos que lo usan</label>';
  h+=l.dev.length?l.dev.map(d=>'<div class="dev"><span>'+esc(d.name)+'<br><span class="small">'+esc(d.at?new Date(d.at).toLocaleString('es-CR'):'')+'</span></span><button class="sm sec" onclick="quitar(\''+s+'\',\''+esc(d.id)+'\')">Quitar</button></div>').join(''):'<div class="small">Ninguno todavía.</div>';
@@ -116,14 +123,23 @@ function ver(sn){return LIC.find(l=>l.sn===sn)}
 async function patch(sn,fields,mask,exists){let q=mask.map(m=>'updateMask.fieldPaths='+encodeURIComponent(m)).join('&');if(exists===false)q+=(q?'&':'')+'currentDocument.exists=false';
  return api('PATCH','/licenses/'+encodeURIComponent(sn)+(q?'?'+q:''),{fields})}
 async function run(f,ok){msg('amsg','');try{await f();if(ok)msg('amsg',ok,true);await cargar()}catch(e){const m=errApi(e);msg('amsg',m);window.scrollTo(0,0)}}
+function ymd(d){const q=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+q(d.getMonth()+1)+'-'+q(d.getDate())}
+function hoy(){return ymd(new Date())}
+function sumMes(base,n){const p=base.split('-').map(Number),d=new Date(p[0],p[1]-1,1);d.setMonth(d.getMonth()+n);const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();d.setDate(Math.min(p[2],last));return ymd(d)}
+function dias(x){if(!x)return null;return Math.round((new Date(x+'T00:00:00')-new Date(hoy()+'T00:00:00'))/864e5)}
+function fdate(x){const p=x.split('-');return p[2]+'/'+p[1]+'/'+p[0]}
+function expPill(l){const d=dias(l.exp);if(d===null)return '<span class="pill" style="background:var(--line);color:var(--ink)">Sin vencimiento</span>';if(d<0)return '<span class="pill off">Vencida '+fdate(l.exp)+'</span>';if(d<=10)return '<span class="pill wn">Vence '+fdate(l.exp)+' · '+(d===0?'hoy':d+' día'+(d===1?'':'s'))+'</span>';return '<span class="pill on">Vence '+fdate(l.exp)+' · '+d+' días</span>'}
 function codigo(){const a=new Uint32Array(12);crypto.getRandomValues(a);let s='';for(let i=0;i<12;i++){s+=AL[a[i]%AL.length];if(i%4===3&&i<11)s+='-'}return 'PESC-'+s}
-async function generar(){const cli=$('ncli').value.trim(),max=Math.max(1,parseInt($('nmax').value)||1),nota=$('nnota').value.trim();
+async function generar(){const cli=$('ncli').value.trim(),max=Math.max(1,parseInt($('nmax').value)||1),nota=$('nnota').value.trim(),mes=Math.max(0,Math.min(240,parseInt($('nmes').value)||0));
  if(!cli)return msg('amsg','Escriba el nombre del cliente o empresa.');
  $('bgen').disabled=true;msg('amsg','');
- try{let sn='',ok=false;for(let i=0;i<5&&!ok;i++){sn=codigo();try{await patch(sn,{active:B(true),max:N(max),devices:{mapValue:{fields:{}}},cliente:S(cli),nota:S(nota),creada:S(new Date().toISOString())},['active','max','devices','cliente','nota','creada'],false);ok=true}catch(e){if(errApi(e)!=='ALREADY')throw e}}
+ try{let sn='',ok=false;for(let i=0;i<5&&!ok;i++){sn=codigo();try{await patch(sn,{active:B(true),max:N(max),devices:{mapValue:{fields:{}}},cliente:S(cli),nota:S(nota),creada:S(new Date().toISOString()),...(mes>0?{exp:S(sumMes(hoy(),mes))}:{})},['active','max','devices','cliente','nota','creada'].concat(mes>0?['exp']:[]),false);ok=true}catch(e){if(errApi(e)!=='ALREADY')throw e}}
   if(!ok)throw new Error('No se pudo generar un serial único. Intente otra vez.');
-  $('ncli').value='';$('nnota').value='';$('nmax').value='1';OPEN=sn;await cargar();msg('amsg','Serial creado: '+sn,true);window.scrollTo(0,0)}
+  $('ncli').value='';$('nnota').value='';$('nmax').value='1';$('nmes').value='1';OPEN=sn;await cargar();msg('amsg','Serial creado: '+sn,true);window.scrollTo(0,0)}
  catch(e){msg('amsg',errApi(e)==='ALREADY'?'Ese serial ya existe.':errApi(e))}finally{$('bgen').disabled=false}}
+const renov=(sn,n)=>{if(!(n>0))return msg('amsg','Escriba cuántos meses sumar.');const l=ver(sn),b=(l&&l.exp&&dias(l.exp)>=0)?l.exp:hoy(),nx=sumMes(b,n);run(()=>patch(sn,{exp:S(nx)},['exp']),'Licencia renovada hasta el '+fdate(nx)+'.')};
+const fijarExp=sn=>{const v=($('fexp').value||'').trim();if(!/^\d{4}-\d{2}-\d{2}$/.test(v))return msg('amsg','Escoja una fecha.');run(()=>patch(sn,{exp:S(v)},['exp']),'Vencimiento fijado al '+fdate(v)+'.')};
+const sinExp=sn=>run(()=>patch(sn,{},['exp']),'Sin vencimiento: la licencia no se bloqueará por fecha.');
 const act=(sn,v)=>run(()=>patch(sn,{active:B(v)},['active']),v?'Licencia activada.':'Licencia desactivada.');
 const mx=(sn,n)=>{if(n<1)return;run(()=>patch(sn,{max:N(n)},['max']))};
 const guardarDatos=sn=>run(()=>patch(sn,{cliente:S($('ecli').value.trim()),nota:S($('enota').value.trim())},['cliente','nota']),'Guardado.');
@@ -134,7 +150,7 @@ function borrar(sn){const b=$('del_'+sn);if(delArm!==sn){delArm=sn;b.textContent
 function copiar(t,ok){const f=()=>{const a=document.createElement('textarea');a.value=t;a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);a.select();try{document.execCommand('copy')}catch(e){}a.remove()};
  try{navigator.clipboard.writeText(t).catch(f)}catch(e){f()}msg('amsg',ok||'Copiado: '+t,true);window.scrollTo(0,0)}
 function copiarMsg(sn){const l=ver(sn),url=location.origin.indexOf('http')===0?location.origin.replace(/\/generador.*$/,'')+'/':'https://pescaderia-campos-pacific-pages-dev.jbilly1987.workers.dev/';
- copiar('Su sistema de pescadería está listo.\n\nAbra: '+url+'\nEn la primera pantalla escriba:\n• Serial: '+sn+'\n• Correo de su empresa (el que usted elija)\n• Una contraseña (6 o más caracteres)\nY toque Activar.\n\nEn los demás aparatos de su negocio escriba el mismo serial, correo y contraseña.'+(l&&l.max?'\nAparatos permitidos: '+l.max+'.':''),'Mensaje copiado. Péguelo en WhatsApp.')}
+ copiar('Su sistema de pescadería está listo.\n\nAbra: '+url+'\nEn la primera pantalla escriba:\n• Serial: '+sn+'\n• Correo de su empresa (el que usted elija)\n• Una contraseña (6 o más caracteres)\nY toque Activar.\n\nEn los demás aparatos de su negocio escriba el mismo serial, correo y contraseña.'+(l&&l.max?'\nAparatos permitidos: '+l.max+'.':'')+(l&&l.exp?'\nLicencia válida hasta el '+fdate(l.exp)+'.':''),'Mensaje copiado. Péguelo en WhatsApp.')}
 async function entrarApp(){$('login').hidden=true;$('app').hidden=false;$('who').textContent='Administrador: '+EMAIL;await cargar()}
 function salir(){store.del('gen_rt');TOK=null;LIC=[];OPEN=null;$('app').hidden=true;$('login').hidden=false;$('pw').value='';msg('lmsg','')}
 (async()=>{$('em').value=store.get('gen_em')||'';EMAIL=store.get('gen_em')||'';
