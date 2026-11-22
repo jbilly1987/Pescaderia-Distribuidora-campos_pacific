@@ -1636,7 +1636,7 @@ async function tnAutoSync(){try{localStorage.removeItem('pesc_autosync')}catch(e
 window.addEventListener('load',()=>setTimeout(async()=>{try{if(!localStorage.getItem('pesc_autosync')||!window.firebase||typeof LIC_ON==='undefined'||!LIC_ON||!licLoad())return;fbReady();const u=await new Promise(r=>{const off=firebase.auth().onAuthStateChanged(x=>{off();r(x)})});if(u)await tnAutoSync();else localStorage.removeItem('pesc_autosync')}catch(e){}},2500));
 
 /* ===== fix45: aviso y aplicacion de actualizaciones (todos los clientes) ===== */
-const BUILD='20261122-0440';
+const BUILD='20261122-0510';
 function updBanner(v){if(document.getElementById('updBar'))return;const d=document.createElement('div');d.id='updBar';d.setAttribute('role','alert');
  d.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:99999;max-width:460px;margin:0 auto;background:#0f6e8c;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 8px 28px rgba(0,0,0,.35);font:600 14px/1.35 system-ui,sans-serif;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
  d.innerHTML='<span style="flex:1;min-width:180px">🔄 Hay una versión nueva del sistema.<br><small style="font-weight:400;opacity:.9">Si tiene una venta a medias, termínela y luego actualice.</small></span><button id="updGo" style="background:#f5c20c;color:#14232d;border:0;border-radius:9px;padding:9px 14px;font:700 14px system-ui,sans-serif">Actualizar ahora</button><button id="updLater" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:9px;padding:9px 12px;font:600 13px system-ui,sans-serif">Después</button>';
@@ -2113,5 +2113,75 @@ function posCartMarks(){const g=$('#posProducts');if(!g)return;g.querySelectorAl
 {const _fp=filterPos;filterPos=function(){_posDisp=true;try{return _fp.apply(this,arguments)}finally{_posDisp=false;try{posCartMarks()}catch(e){}}}}
 {const _rc=refreshCart;refreshCart=function(){const r=_rc.apply(this,arguments);try{if($('#posProducts')&&$('#posSearch')){const g=$('#posProducts'),y=g.scrollTop;filterPos();g.scrollTop=y}}catch(e){}return r}}
 {const st=document.createElement('style');st.textContent='.productbtn{position:relative}.productbtn .cartn{position:absolute;top:8px;right:8px;background:#f5c20c;color:#14232d;font-weight:800;font-size:12px;border-radius:999px;padding:2px 8px;box-shadow:0 2px 8px rgba(0,0,0,.25)}';document.head.appendChild(st)}
+
+/* ===== fix75: tarjetas del inicio que se agrandan con el detalle + sonido y vibración al tocar ===== */
+const TAP={ac:null,last:0};
+function tapOn(k){const st=db.settings||{};return k==='snd'?st.tapSnd!==false:st.tapVib!==false}
+function tapFx(){const n=performance.now();if(n-TAP.last<40)return;TAP.last=n;
+ if(tapOn('vib'))try{navigator.vibrate&&navigator.vibrate(9)}catch(e){}
+ if(!tapOn('snd'))return;try{const A=TAP.ac||(TAP.ac=new (window.AudioContext||window.webkitAudioContext)());if(A.state==='suspended')A.resume();const t=A.currentTime,len=Math.floor(A.sampleRate*.028),b=A.createBuffer(1,len,A.sampleRate),d=b.getChannelData(0);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,6);
+  const src=A.createBufferSource(),f=A.createBiquadFilter(),g=A.createGain();src.buffer=b;f.type='bandpass';f.frequency.value=2600+Math.random()*500;f.Q.value=1.4;g.gain.value=.32;src.connect(f);f.connect(g);g.connect(A.destination);src.start(t)}catch(e){}}
+document.addEventListener('pointerdown',e=>{const el=e.target.closest&&e.target.closest('button,a,.productbtn,.mcard,[onclick],#nav button,select,input[type=checkbox],input[type=radio]');if(el&&!el.disabled)tapFx()},true);
+function tapCard(){if(!_isAdmin())return '';const st=db.settings||{},sw=(k,on,t,sub)=>`<label style="display:flex;gap:12px;align-items:center;padding:10px 0;cursor:pointer"><input type="checkbox" ${on?'checked':''} onchange="tapSet('${k}',this.checked)" style="width:22px;height:22px"><span><b>${t}</b><br><small style="opacity:.75">${sub}</small></span></label>`;
+ return `<div class="card panel"><h2>🔊 Sonido y vibración al tocar</h2>${sw('tapSnd',st.tapSnd!==false,'Sonido de tecla al tocar','Un clic suave, como de teclado, en botones, menú y tarjetas.')}${sw('tapVib',st.tapVib!==false,'Vibrar al tocar','Una vibración cortita (en celulares y tabletas que lo permiten).')}<small style="opacity:.7">Solo el administrador puede cambiar esto. Aplica en todos los aparatos.</small></div>`}
+function tapSet(k,v){db.settings=db.settings||{};db.settings[k]=!!v;save();if(v)tapFx();try{aviso(v?'✅ Activado':'Desactivado')}catch(e){}}
+{const _cf75=configPage;configPage=function(){return _cf75()+tapCard()}}
+/* --- tarjetas que se vienen al frente --- */
+function mxData(k){const t=today(),S=db.sales.filter(x=>x.date===t&&!x.void),sum=S.reduce((a,x)=>a+(+x.total||0),0),row=(a,b,c)=>`<div class="mxr"><span>${a}</span><b>${b}</b>${c!=null?`<small>${c}</small>`:''}</div>`,sec=(h,body)=>`<div class="mxs"><h4>${h}</h4>${body}</div>`;
+ if(k==='ventas'){const y=addDays(t,-1),w=addDays(t,-7),tot=d=>db.sales.filter(x=>x.date===d&&!x.void).reduce((a,x)=>a+(+x.total||0),0);
+  const byPay={};S.forEach(x=>{const k2=x.payment||'—';(byPay[k2]=byPay[k2]||{t:0,n:0});byPay[k2].t+=+x.total||0;byPay[k2].n++});
+  const byUser={};S.forEach(x=>{const k2=x.by||'Sin usuario';(byUser[k2]=byUser[k2]||{t:0,n:0});byUser[k2].t+=+x.total||0;byUser[k2].n++});
+  const prod={};S.forEach(x=>(x.items||[]).forEach(i=>{const k2=i.name||'—';(prod[k2]=prod[k2]||{q:0,t:0,u:i.unit||''});prod[k2].q+=+i.qty||0;prod[k2].t+=(+i.qty||0)*(+i.price||0)}));
+  const hrs=Array(24).fill(0);S.forEach(x=>{const h=x.cts?new Date(x.cts).getHours():parseInt(String(x.time||'').split(':')[0])||0;hrs[h]+=+x.total||0});const hs=hrs.map((v,h)=>[h,v]).filter(([h,v])=>v>0||(h>=6&&h<=19)),mx=Math.max(1,...hrs);
+  const dif=(a,b)=>b?` <small class="${a>=b?'up':'dn'}">${a>=b?'▲':'▼'} ${Math.abs(Math.round((a-b)/b*100))}%</small>`:'';
+  return `<div class="mxbig">${money(sum)}</div><div class="mxsub">${S.length} factura${S.length!==1?'s':''} · promedio ${money(S.length?sum/S.length:0)}</div>
+  <div class="mxgrid">${sec('📅 Comparación',row('Ayer',money(tot(y))+dif(sum,tot(y)))+row('Mismo día la semana pasada',money(tot(w))+dif(sum,tot(w))))}
+  ${sec('💳 Por forma de pago',Object.entries(byPay).sort((a,b)=>b[1].t-a[1].t).map(([n,v])=>row(esc(n),money(v.t),v.n+' fact.')).join('')||'<p class="mxe">Sin ventas</p>')}
+  ${sec('👤 Por usuario',Object.entries(byUser).sort((a,b)=>b[1].t-a[1].t).map(([n,v])=>row(esc(n),money(v.t),v.n+' fact.')).join('')||'<p class="mxe">Sin ventas</p>')}
+  ${sec('🐟 Lo más vendido hoy',Object.entries(prod).sort((a,b)=>b[1].t-a[1].t).slice(0,6).map(([n,v])=>row(esc(n),money(v.t),qn(r3(v.q))+' '+esc(v.u))).join('')||'<p class="mxe">Sin ventas</p>')}</div>
+  ${sec('🕐 Ventas por hora',`<div class="mxbars">${hs.map(([h,v])=>`<div title="${h}:00 · ${money(v)}"><i style="height:${Math.round(v/mx*100)}%"></i><span>${h%12||12}</span></div>`).join('')}</div>`)}`}
+ if(k==='facturas'){const A=db.sales.filter(x=>x.date===t),an=A.filter(x=>x.void).length,ed=A.filter(x=>x.edited&&!x.void).length;
+  return `<div class="mxbig">${S.length}</div><div class="mxsub">facturas de hoy${an?` · ${an} anulada${an>1?'s':''}`:''}${ed?` · ${ed} editada${ed>1?'s':''}`:''}</div>
+  <div class="mxlist">${A.slice().sort((a,b)=>(b.cts||0)-(a.cts||0)).map(x=>`<div class="mxi ${x.void?'void':''}"><b>${esc(x.number)}</b><span>${esc(x.time||'')}</span><span class="nm">${esc(x.customer||'Cliente de contado')}</span><span class="pg">${esc(x.payment||'')}</span><b class="am">${money(x.total)}</b>${x.void?'<em>ANULADA</em>':''}</div>`).join('')||'<p class="mxe">Todavía no hay facturas hoy.</p>'}</div>`}
+ if(k==='cobrar'){const L=arOf().sort((a,b)=>b.bal-a.bal),tot=L.reduce((a,x)=>a+x.bal,0),old=x=>x.sales.reduce((m,v)=>!m||v.date<m?v.date:m,'');
+  return `<div class="mxbig">${money(tot)}</div><div class="mxsub">${L.length} cliente${L.length!==1?'s':''} con saldo pendiente</div>
+  <div class="mxlist">${L.map(x=>{const o=old(x),dd=o?Math.round((new Date(t)-new Date(o))/864e5):0;return `<div class="mxi"><span class="nm"><b>${esc(x.name||'Cliente')}</b></span><span>${x.sales.length} fact.</span><span class="${dd>30?'late':''}">${o?'desde hace '+dd+' d':''}</span><b class="am">${money(x.bal)}</b></div>`}).join('')||'<p class="mxe">🎉 Nadie debe nada.</p>'}</div>`}
+ if(k==='reponer'){const L=db.products.filter(p=>stock(p)<=Number(p.min||0)).sort((a,b)=>stock(a)-Number(a.min||0)-(stock(b)-Number(b.min||0)));
+  return `<div class="mxbig">${L.length}</div><div class="mxsub">productos en o bajo el mínimo</div>
+  <div class="mxlist">${L.map(p=>{const s0=stock(p),m=Number(p.min||0),sg=r3(Math.max(m*2-s0,m-s0,0));return `<div class="mxi"><span class="nm">${emo(p)} <b>${esc(p.name)}</b></span><span class="${s0<=0?'late':''}">Hay ${qn(s0)} ${esc(p.unit||'')}</span><span>Mín. ${qn(m)}</span><span>${p.supplier?'🚚 '+esc(p.supplier):''}</span><b class="am">Pedir ≈ ${qn(sg)}</b></div>`}).join('')||'<p class="mxe">✅ Todo el inventario está bien.</p>'}</div>`}
+ return ''}
+const MX_K={'Ventas de hoy':'ventas','Facturas de hoy':'facturas','Por cobrar':'cobrar','Productos por reponer':'reponer'};
+function mxOpen(card,k,title){if(document.getElementById('mxBg'))return;const r=card.getBoundingClientRect();
+ const bg=document.createElement('div');bg.id='mxBg';const pn=document.createElement('div');pn.id='mxPn';
+ pn.innerHTML=`<div class="mxh"><span class="e">${mem(title)}</span><b>${esc(title)}</b><span style="flex:1"></span><button class="mxx keep" aria-label="Cerrar">✕</button></div><div class="mxc">${mxData(k)}</div><div class="mxf">Solo información · para trabajar use su sección en el menú</div>`;
+ document.body.append(bg,pn);card.style.visibility='hidden';
+ const f=pn.getBoundingClientRect(),sx=r.width/f.width,sy=r.height/f.height,dx=r.left-f.left,dy=r.top-f.top;
+ pn.style.transformOrigin='0 0';pn.style.transform=`translate(${dx}px,${dy}px) scale(${sx},${sy})`;pn.classList.add('pre');void pn.offsetWidth;
+ pn.style.transition='transform .48s cubic-bezier(.2,.9,.25,1.12),border-radius .48s';pn.style.transform='none';pn.classList.remove('pre');bg.classList.add('on');
+ const close=()=>{const r2=card.getBoundingClientRect(),f2=pn.getBoundingClientRect();pn.classList.add('pre');pn.style.transition='transform .34s cubic-bezier(.5,0,.75,0)';pn.style.transform=`translate(${r2.left-f2.left}px,${r2.top-f2.top}px) scale(${r2.width/f2.width},${r2.height/f2.height})`;bg.classList.remove('on');
+  setTimeout(()=>{pn.remove();bg.remove();card.style.visibility=''},340);document.removeEventListener('keydown',esc1)};
+ const esc1=e=>{if(e.key==='Escape')close()};document.addEventListener('keydown',esc1);bg.onclick=close;pn.querySelector('.mxx').onclick=close}
+function mxWire(){if(currentPage!=='dashboard')return;document.querySelectorAll('#view .grid > .card').forEach(c=>{const lb=c.querySelector('.metric-label');if(!lb||c.dataset.mx)return;const tt=lb.textContent.replace(/^\s*\S+\s*/,'').trim(),k=Object.entries(MX_K).find(([n])=>lb.textContent.includes(n));if(!k)return;c.dataset.mx=k[1];c.classList.add('mcard');c.title='Toque para ver el detalle';c.addEventListener('click',e=>{if(e.target.closest('button,a'))return;mxOpen(c,k[1],k[0])})})}
+{const _pr75=postRender;postRender=function(){const r=_pr75.apply(this,arguments);try{mxWire()}catch(e){}return r}}
+{const st=document.createElement('style');st.textContent=`
+.mcard{cursor:pointer;transition:transform .18s,box-shadow .18s}.mcard:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(0,0,0,.25)}.mcard:active{transform:scale(.97)}
+.mcard:after{content:'Ver detalle ›';display:block;font-size:11px;opacity:.55;margin-top:4px}
+#mxBg{position:fixed;inset:0;z-index:9000;background:rgba(5,15,25,0);backdrop-filter:blur(0);transition:background .4s,backdrop-filter .4s}
+#mxBg.on{background:rgba(5,15,25,.55);backdrop-filter:blur(6px)}
+#mxPn{position:fixed;z-index:9001;left:50%;top:50%;width:min(620px,94vw);max-height:88vh;margin-left:calc(min(620px,94vw)/-2);transform:none;translate:0 -50%;display:flex;flex-direction:column;background:var(--card,#13293a);color:inherit;border:1px solid rgba(255,255,255,.14);border-radius:22px;box-shadow:0 30px 80px rgba(0,0,0,.5);overflow:hidden}
+#mxPn.pre .mxc,#mxPn.pre .mxf{opacity:0}#mxPn .mxc,#mxPn .mxf{transition:opacity .3s .18s}
+.mxh{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.1);font-size:18px}.mxh .e{font-size:24px}
+.mxx{border:0;background:rgba(255,255,255,.12);color:inherit;width:34px;height:34px;border-radius:50%;font-size:16px;cursor:pointer}
+.mxc{overflow:auto;padding:14px 16px 16px}
+.mxbig{font-size:38px;font-weight:800;line-height:1.1}.mxsub{opacity:.75;margin:2px 0 12px}
+.mxgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.mxs{background:rgba(255,255,255,.06);border-radius:14px;padding:10px 12px;margin-bottom:10px}.mxs h4{margin:0 0 6px;font-size:14px}
+.mxr{display:flex;gap:8px;align-items:baseline;padding:4px 0;border-bottom:1px dashed rgba(255,255,255,.08)}.mxr span{flex:1}.mxr small{opacity:.6;min-width:58px;text-align:right}
+.mxr .up{color:#4ade80}.mxr .dn{color:#f87171}
+.mxbars{display:flex;gap:4px;align-items:flex-end;height:120px;padding-top:6px}.mxbars div{flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end}.mxbars i{display:block;width:100%;min-height:2px;border-radius:5px 5px 2px 2px;background:linear-gradient(#38bdf8,#0f6e8c)}.mxbars span{font-size:10px;opacity:.6;margin-top:3px}
+.mxlist{display:flex;flex-direction:column;gap:6px}.mxi{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;background:rgba(255,255,255,.06);border-radius:12px;padding:9px 12px}.mxi .nm{flex:1;min-width:140px}.mxi .am{margin-left:auto}.mxi .pg,.mxi span{opacity:.85;font-size:13px}.mxi.void{opacity:.5;text-decoration:line-through}.mxi em{color:#f87171;font-style:normal;font-weight:800;font-size:11px}.late{color:#fca5a5;font-weight:700}
+.mxe{opacity:.7;text-align:center;padding:14px}
+.mxf{padding:9px 16px;font-size:12px;opacity:.6;border-top:1px solid rgba(255,255,255,.08);text-align:center}
+`;document.head.appendChild(st)}
 (async()=>{await bootStore();syncLoadMeta();await load();gate();if(document.readyState==='complete')syncStart();else window.addEventListener('load',()=>syncStart());setTimeout(lowCheck,3500);setTimeout(backupCheck,9000);setInterval(backupCheck,900000);setTimeout(cobroCheck,6500);setTimeout(fixedRun,4000);setInterval(fixedRun,3600000);setTimeout(resumenCheck,12000);setInterval(resumenCheck,900000);try{themeTick();setInterval(themeTick,60000)}catch(e){}setTimeout(fxApply,3000);setInterval(fxApply,10800000);setTimeout(expCheck,8500);setInterval(expCheck,900000);setTimeout(badgeCobro,2500);setInterval(badgeCobro,300000);setInterval(cobroCheck,900000);setTimeout(cbkRun,25000);setInterval(cbkRun,1800000)})();
 </script></body></html>
