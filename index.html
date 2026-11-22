@@ -1636,7 +1636,7 @@ async function tnAutoSync(){try{localStorage.removeItem('pesc_autosync')}catch(e
 window.addEventListener('load',()=>setTimeout(async()=>{try{if(!localStorage.getItem('pesc_autosync')||!window.firebase||typeof LIC_ON==='undefined'||!LIC_ON||!licLoad())return;fbReady();const u=await new Promise(r=>{const off=firebase.auth().onAuthStateChanged(x=>{off();r(x)})});if(u)await tnAutoSync();else localStorage.removeItem('pesc_autosync')}catch(e){}},2500));
 
 /* ===== fix45: aviso y aplicacion de actualizaciones (todos los clientes) ===== */
-const BUILD='20261122-0540';
+const BUILD='20261122-0600';
 function updBanner(v){if(document.getElementById('updBar'))return;const d=document.createElement('div');d.id='updBar';d.setAttribute('role','alert');
  d.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:99999;max-width:460px;margin:0 auto;background:#0f6e8c;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 8px 28px rgba(0,0,0,.35);font:600 14px/1.35 system-ui,sans-serif;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
  d.innerHTML='<span style="flex:1;min-width:180px">🔄 Hay una versión nueva del sistema.<br><small style="font-weight:400;opacity:.9">Si tiene una venta a medias, termínela y luego actualice.</small></span><button id="updGo" style="background:#f5c20c;color:#14232d;border:0;border-radius:9px;padding:9px 14px;font:700 14px system-ui,sans-serif">Actualizar ahora</button><button id="updLater" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:9px;padding:9px 12px;font:600 13px system-ui,sans-serif">Después</button>';
@@ -2195,5 +2195,36 @@ function credBox(){const sc=$('#saleCustomer');if(!sc)return;let b=$('#credBox')
 {const _dp76=doPay;doPay=function(e){let cid='',before=null;try{const d=arOf().find(x=>x.key===e.target.dataset.k);cid=d&&d.id||'';before=cid?credInfo(cid):null}catch(_){}const r=_dp76.apply(this,arguments);
   try{if(cid&&before&&before.lim>0){const af=credInfo(cid);if(af&&af.owed<before.owed-0.004)setTimeout(()=>aviso('✅ Abono aplicado a '+af.c.name+'.\nAhora debe '+money(af.owed)+' y tiene '+money(Math.max(0,af.disp))+' de crédito disponible (límite '+money(af.lim)+').'),300)}}catch(_){}return r}}
 {const _pr76=postRender;postRender=function(){const r=_pr76.apply(this,arguments);try{if(currentPage==='ventas')credBox()}catch(e){}return r}}
+
+/* ===== fix77: indicador de conexión con faro animado (verde en línea, ámbar conectando, rojo fuera de línea) ===== */
+function lhSVG(){return `<svg class="lh" viewBox="0 0 40 48" aria-hidden="true"><defs><radialGradient id="lhG"><stop offset="0" stop-color="var(--lc)" stop-opacity=".95"/><stop offset="1" stop-color="var(--lc)" stop-opacity="0"/></radialGradient><linearGradient id="lhB" x1="0" x2="1"><stop offset="0" stop-color="var(--lc)" stop-opacity=".85"/><stop offset="1" stop-color="var(--lc)" stop-opacity="0"/></linearGradient></defs>
+<g class="lh-beam"><path d="M20 11 L48 4 L48 18Z" fill="url(#lhB)" opacity=".8"/><path d="M20 11 L-8 4 L-8 18Z" fill="url(#lhB)" opacity=".5"/></g>
+<circle class="lh-glow" cx="20" cy="11" r="11" fill="url(#lhG)"/>
+<path d="M14 7 L20 3 L26 7Z" fill="#b91c1c"/><rect x="15" y="7" width="10" height="7" rx="1.5" fill="#1e293b" stroke="#e2e8f0" stroke-width=".8"/><circle class="lh-lamp" cx="20" cy="10.5" r="2.6" fill="var(--lc)"/>
+<path d="M14.5 14 L25.5 14 L28 44 L12 44Z" fill="#f8fafc"/><path d="M13.6 22 L26.4 22 L27 29 L13 29Z" fill="#dc2626"/><path d="M12.6 35 L27.4 35 L28 41 L12 41Z" fill="#dc2626"/><rect x="18" y="38" width="4" height="6" rx="1" fill="#334155"/>
+<path d="M4 46 Q12 43 20 46 T36 46" stroke="#38bdf8" stroke-width="2" fill="none" opacity=".8" class="lh-wave"/></svg>`}
+const LH={ok:['#22c55e','En línea','Sincronizado','go'],sync:['#22c55e','En línea','Sincronizando'+'…','go'],ro:['#22c55e','En línea','Solo lectura','go'],slow:['#f59e0b','Conectando','con el servidor…','mid'],err:['#ef4444','Fuera de línea','Guardado en este equipo','stop'],off:['#94a3b8','Modo local','Sin nube','stop']};
+function lhPaint(){const e=$('#connection');if(!e)return;let st=(typeof SYNC!=='undefined'&&SYNC.st)||'off';if(!navigator.onLine&&st!=='off')st='err';const L=LH[st]||LH.off,sub=st==='sync'&&SYNC.prog?'Sincronizando '+SYNC.prog:L[2];
+ if(!e.querySelector('.lh')){e.classList.add('lhc');e.innerHTML=lhSVG()+'<span class="lht"><b></b><small></small></span>'}
+ e.style.setProperty('--lc',L[0]);e.dataset.lh=L[3];e.querySelector('.lht b').textContent=L[1];e.querySelector('.lht small').textContent=sub;e.title=L[1]+' · '+sub+(st==='err'&&SYNC.err?'\n'+SYNC.err:'')}
+{const _ss77=setSt;setSt=function(){const r=_ss77.apply(this,arguments);try{lhPaint()}catch(e){}return r}}
+addEventListener('online',()=>{try{lhPaint()}catch(e){}});addEventListener('offline',()=>{try{lhPaint()}catch(e){}});
+setTimeout(()=>{try{lhPaint()}catch(e){}},300);
+{const st=document.createElement('style');st.textContent=`
+#connection.lhc{display:inline-flex;align-items:center;gap:8px;padding:3px 12px 3px 6px;border-radius:999px;background:linear-gradient(135deg,rgba(15,40,60,.55),rgba(15,110,140,.35));border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#fff;box-shadow:0 4px 18px rgba(0,0,0,.25),inset 0 0 12px color-mix(in srgb,var(--lc) 25%,transparent);overflow:visible;line-height:1.1;min-height:40px}
+#connection .lh{width:30px;height:36px;overflow:visible;flex-shrink:0;filter:drop-shadow(0 0 6px color-mix(in srgb,var(--lc) 70%,transparent))}
+#connection .lht{display:flex;flex-direction:column;text-align:left}#connection .lht b{font-size:13px;letter-spacing:.01em}#connection .lht small{font-size:11px;opacity:.85;white-space:nowrap}
+#connection .lh-beam{transform-origin:20px 11px;transform-box:view-box;animation:lhSpin 3.2s linear infinite}
+#connection[data-lh=mid] .lh-beam{animation-duration:1.4s}
+#connection[data-lh=stop] .lh-beam{animation:none;opacity:0}
+#connection .lh-glow{transform-origin:20px 11px;transform-box:view-box;animation:lhPulse 1.6s ease-in-out infinite alternate}
+#connection[data-lh=stop] .lh-lamp,#connection[data-lh=stop] .lh-glow{animation:lhBlink 1.8s ease-in-out infinite}
+#connection .lh-wave{animation:lhWave 2.4s ease-in-out infinite alternate}
+@keyframes lhSpin{to{transform:rotate(360deg)}}
+@keyframes lhPulse{from{opacity:.55;transform:scale(.85)}to{opacity:1;transform:scale(1.15)}}
+@keyframes lhBlink{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes lhWave{from{transform:translateX(-1.5px)}to{transform:translateX(1.5px)}}
+@media (prefers-reduced-motion:reduce){#connection .lh-beam,#connection .lh-glow,#connection .lh-wave{animation:none}}
+`;document.head.appendChild(st)}
 (async()=>{await bootStore();syncLoadMeta();await load();gate();if(document.readyState==='complete')syncStart();else window.addEventListener('load',()=>syncStart());setTimeout(lowCheck,3500);setTimeout(backupCheck,9000);setInterval(backupCheck,900000);setTimeout(cobroCheck,6500);setTimeout(fixedRun,4000);setInterval(fixedRun,3600000);setTimeout(resumenCheck,12000);setInterval(resumenCheck,900000);try{themeTick();setInterval(themeTick,60000)}catch(e){}setTimeout(fxApply,3000);setInterval(fxApply,10800000);setTimeout(expCheck,8500);setInterval(expCheck,900000);setTimeout(badgeCobro,2500);setInterval(badgeCobro,300000);setInterval(cobroCheck,900000);setTimeout(cbkRun,25000);setInterval(cbkRun,1800000)})();
 </script></body></html>
