@@ -58,6 +58,7 @@ button:disabled{opacity:.5}
   <div style="flex:1;min-width:130px"><label>Meses de licencia</label><input id="nmes" type="number" min="0" max="240" value="1" inputmode="numeric"></div></div>
   <div class="row" style="margin-top:6px"><span class="small">Meses:</span><button class="sm sec" onclick="$('nmes').value=1">1</button><button class="sm sec" onclick="$('nmes').value=3">3</button><button class="sm sec" onclick="$('nmes').value=6">6</button><button class="sm sec" onclick="$('nmes').value=12">12</button><button class="sm sec" onclick="$('nmes').value=0">Sin vencimiento</button></div>
   <label>Nota (opcional)</label><input id="nnota" placeholder="Teléfono, precio, fecha de pago…">
+  <label style="display:flex;gap:10px;align-items:center;margin-top:12px;cursor:pointer"><input id="nnube" type="checkbox" checked style="width:22px;height:22px;margin:0"><span><b>☁️ Incluir la nube</b><br><span class="small">Sincronizar los datos entre los aparatos del cliente. Si la quita, el sistema funciona solo en cada aparato.</span></span></label>
   <div class="row" style="margin-top:12px"><button id="bgen" onclick="generar()">Generar serial</button></div>
  </div>
  <input id="busca" placeholder="Buscar por serial, cliente o correo…" oninput="pintar()" style="margin-bottom:12px">
@@ -100,7 +101,7 @@ const S=v=>({stringValue:String(v)}),B=v=>({booleanValue:!!v}),N=v=>({integerVal
 function dec(d){const f=d.fields||{},g=k=>f[k]||{},sn=decodeURIComponent(d.name.split('/').pop()),dv=[],m=(f.devices&&f.devices.mapValue&&f.devices.mapValue.fields)||{};
  for(const k in m){const q=(m[k].mapValue&&m[k].mapValue.fields)||{};dv.push({id:k,name:(q.name||{}).stringValue||'Aparato',at:(q.at||{}).stringValue||''})}
  dv.sort((a,b)=>String(a.at).localeCompare(String(b.at)));
- return{sn,active:!!g('active').booleanValue,max:+(g('max').integerValue||g('max').doubleValue||1),cli:g('cliente').stringValue||'',nota:g('nota').stringValue||'',owner:g('ownerEmail').stringValue||'',creada:g('creada').stringValue||'',exp:g('exp').stringValue||'',dev:dv}}
+ return{sn,active:!!g('active').booleanValue,max:+(g('max').integerValue||g('max').doubleValue||1),cli:g('cliente').stringValue||'',nota:g('nota').stringValue||'',owner:g('ownerEmail').stringValue||'',creada:g('creada').stringValue||'',exp:g('exp').stringValue||'',nube:g('nube').booleanValue!==false,dev:dv}}
 async function cargar(){msg('amsg','');try{let out=[],pt='';do{const j=await api('GET','/licenses?pageSize=300'+(pt?'&pageToken='+encodeURIComponent(pt):''));(j.documents||[]).forEach(d=>out.push(dec(d)));pt=j.nextPageToken||''}while(pt);
  out.sort((a,b)=>String(b.creada).localeCompare(String(a.creada))||a.sn.localeCompare(b.sn));LIC=out;pintar()}catch(e){const m=errApi(e);msg('amsg',m);if(e.message==='SESION')setTimeout(salir,1500)}}
 function pintar(){const q=($('busca').value||'').trim().toLowerCase();const L=LIC.filter(l=>!q||(l.sn+' '+l.cli+' '+l.owner+' '+l.nota).toLowerCase().includes(q));
@@ -108,11 +109,11 @@ function pintar(){const q=($('busca').value||'').trim().toLowerCase();const L=LI
  $('lista').innerHTML=L.length?L.map(card).join(''):'<div class="card small">'+(LIC.length?'Nada coincide con la búsqueda.':'Todavía no hay licencias. Genere la primera arriba.')+'</div>'}
 function card(l){const u=l.dev.length,full=u>=l.max,o=OPEN===l.sn;
  let h='<div class="card lic" data-sn="'+esc(l.sn)+'"><div onclick="abrir(\''+esc(l.sn)+'\')"><div class="top"><span class="sn">'+esc(l.sn)+'</span><span class="pill '+(l.active?'on':'off')+'">'+(l.active?'Activa':'Desactivada')+'</span></div>'
- +'<div class="meta"><b>'+esc(l.cli||'Sin nombre')+'</b> · aparatos '+u+' de '+l.max+(full?' <span class="pill wn">completo</span>':'')+'<br>'+expPill(l)+'<br>Nube: '+(l.owner?esc(l.owner):'<i>aún sin cuenta</i>')+'</div></div>';
+ +'<div class="meta"><b>'+esc(l.cli||'Sin nombre')+'</b> · aparatos '+u+' de '+l.max+(full?' <span class="pill wn">completo</span>':'')+'<br>'+expPill(l)+'<br>Nube: '+(l.nube?'<span class="pill on">☁️ incluida</span> '+(l.owner?esc(l.owner):'<i>aún sin cuenta</i>'):'<span class="pill off">sin nube</span>')+'</div></div>';
  if(o)h+=det(l);return h+'</div>'}
 function det(l){const s=esc(l.sn);let h='<div class="det">'
  +'<div class="row"><button class="sm" onclick="copiar(\''+s+'\')">Copiar serial</button><button class="sm sec" onclick="copiarMsg(\''+s+'\')">Copiar mensaje para el cliente</button>'
- +'<button class="sm '+(l.active?'sec':'')+'" onclick="act(\''+s+'\','+(!l.active)+')">'+(l.active?'Desactivar':'Activar')+'</button></div>'
+ +'<button class="sm '+(l.active?'sec':'')+'" onclick="act(\''+s+'\','+(!l.active)+')">'+(l.active?'Desactivar':'Activar')+'</button><button class="sm '+(l.nube?'sec':'')+'" onclick="nubeSet(\''+s+'\','+(!l.nube)+')">'+(l.nube?'☁️ Quitar la nube':'☁️ Dar la nube')+'</button></div>'
  +'<label>Cliente</label><input id="ecli" value="'+esc(l.cli)+'"><label>Nota</label><input id="enota" value="'+esc(l.nota)+'">'
  +'<div class="row" style="margin-top:8px"><button class="sm sec" onclick="guardarDatos(\''+s+'\')">Guardar nombre y nota</button></div>'
  +'<label>Vencimiento de la licencia</label><div class="small">'+(l.exp?'Hasta el <b>'+fdate(l.exp)+'</b> ('+(dias(l.exp)<0?'vencida hace '+(-dias(l.exp))+' día(s)':dias(l.exp)===0?'vence hoy':'faltan '+dias(l.exp)+' días')+')':'Sin vencimiento: no se bloquea nunca.')+'</div>'
@@ -149,13 +150,14 @@ function codigo(){const a=new Uint32Array(12);crypto.getRandomValues(a);let s=''
 async function generar(){const cli=$('ncli').value.trim(),max=Math.max(1,parseInt($('nmax').value)||1),nota=$('nnota').value.trim(),mes=Math.max(0,Math.min(240,parseInt($('nmes').value)||0));
  if(!cli)return msg('amsg','Escriba el nombre del cliente o empresa.');
  $('bgen').disabled=true;msg('amsg','');
- try{let sn='',ok=false;for(let i=0;i<5&&!ok;i++){sn=codigo();try{await patch(sn,{active:B(true),max:N(max),devices:{mapValue:{fields:{}}},cliente:S(cli),nota:S(nota),creada:S(new Date().toISOString()),...(mes>0?{exp:S(sumMes(hoy(),mes))}:{})},['active','max','devices','cliente','nota','creada'].concat(mes>0?['exp']:[]),false);ok=true}catch(e){if(errApi(e)!=='ALREADY')throw e}}
+ try{let sn='',ok=false;for(let i=0;i<5&&!ok;i++){sn=codigo();try{await patch(sn,{active:B(true),max:N(max),devices:{mapValue:{fields:{}}},cliente:S(cli),nota:S(nota),nube:B(!!$('nnube').checked),creada:S(new Date().toISOString()),...(mes>0?{exp:S(sumMes(hoy(),mes))}:{})},['active','max','devices','cliente','nota','nube','creada'].concat(mes>0?['exp']:[]),false);ok=true}catch(e){if(errApi(e)!=='ALREADY')throw e}}
   if(!ok)throw new Error('No se pudo generar un serial único. Intente otra vez.');
-  $('ncli').value='';$('nnota').value='';$('nmax').value='1';$('nmes').value='1';OPEN=sn;await cargar();msg('amsg','Serial creado: '+sn,true);window.scrollTo(0,0)}
+  $('ncli').value='';$('nnota').value='';$('nmax').value='1';$('nmes').value='1';$('nnube').checked=true;OPEN=sn;await cargar();msg('amsg','Serial creado: '+sn,true);window.scrollTo(0,0)}
  catch(e){msg('amsg',errApi(e)==='ALREADY'?'Ese serial ya existe.':errApi(e))}finally{$('bgen').disabled=false}}
 const renov=(sn,n)=>{if(!(n>0))return msg('amsg','Escriba cuántos meses sumar.');const l=ver(sn),b=(l&&l.exp&&dias(l.exp)>=0)?l.exp:hoy(),nx=sumMes(b,n);run(()=>patch(sn,{exp:S(nx)},['exp']),'Licencia renovada hasta el '+fdate(nx)+'.')};
 const fijarExp=sn=>{const v=($('fexp').value||'').trim();if(!/^\d{4}-\d{2}-\d{2}$/.test(v))return msg('amsg','Escoja una fecha.');run(()=>patch(sn,{exp:S(v)},['exp']),'Vencimiento fijado al '+fdate(v)+'.')};
 const sinExp=sn=>run(()=>patch(sn,{},['exp']),'Sin vencimiento: la licencia no se bloqueará por fecha.');
+const nubeSet=(sn,v)=>run(()=>patch(sn,{nube:B(v)},['nube']),v?'☁️ Nube habilitada: el cliente ya puede sincronizar.':'Nube quitada: el sistema del cliente seguirá funcionando solo en cada aparato.');
 const act=(sn,v)=>run(()=>patch(sn,{active:B(v)},['active']),v?'Licencia activada.':'Licencia desactivada.');
 const mx=(sn,n)=>{if(n<1)return;run(()=>patch(sn,{max:N(n)},['max']))};
 const guardarDatos=sn=>run(()=>patch(sn,{cliente:S($('ecli').value.trim()),nota:S($('enota').value.trim())},['cliente','nota']),'Guardado.');
