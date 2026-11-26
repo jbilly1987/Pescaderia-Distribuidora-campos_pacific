@@ -1180,7 +1180,7 @@ let CBK_BUSY=false;
 async function cbkRun(force,show){if(CBK_BUSY)return;const say=t=>{if(show===true)aviso(t)};
  if(!cbkReady()){say('☁️ El respaldo en la nube necesita la Sincronización activa y conectada (Configuración > Sincronización).');return}
  if(SYNC.canWrite===false){say('☁️ Este usuario es de solo lectura: no puede guardar respaldos.');return}
- if(!_isAdmin()){say('☁️ Solo el administrador puede respaldar en la nube.');return}
+ if(!_isAdmin()&&show===true){say('☁️ Solo el administrador puede respaldar en la nube.');return}
  if(!(db.products.length||db.sales.length)){say('☁️ Todavía no hay datos para respaldar.');return}
  if(force!==true&&cbkLast()===today())return;
  if(typeof navigator!=='undefined'&&navigator.onLine===false){say('☁️ No hay internet. Se intentará de nuevo más tarde.');return}
@@ -1637,7 +1637,7 @@ async function tnAutoSync(){try{localStorage.removeItem('pesc_autosync')}catch(e
 window.addEventListener('load',()=>setTimeout(async()=>{try{if(!localStorage.getItem('pesc_autosync')||!window.firebase||typeof LIC_ON==='undefined'||!LIC_ON||!licLoad())return;fbReady();const u=await new Promise(r=>{const off=firebase.auth().onAuthStateChanged(x=>{off();r(x)})});if(u)await tnAutoSync();else localStorage.removeItem('pesc_autosync')}catch(e){}},2500));
 
 /* ===== fix45: aviso y aplicacion de actualizaciones (todos los clientes) ===== */
-const BUILD='20261126-0334';
+const BUILD='20261126-0355';
 function updBanner(v){if(document.getElementById('updBar'))return;const d=document.createElement('div');d.id='updBar';d.setAttribute('role','alert');
  d.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:99999;max-width:460px;margin:0 auto;background:#0f6e8c;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 8px 28px rgba(0,0,0,.35);font:600 14px/1.35 system-ui,sans-serif;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
  d.innerHTML='<span style="flex:1;min-width:180px">🔄 Hay una versión nueva del sistema.<br><small style="font-weight:400;opacity:.9">Si tiene una venta a medias, termínela y luego actualice.</small></span><button id="updGo" style="background:#f5c20c;color:#14232d;border:0;border-radius:9px;padding:9px 14px;font:700 14px system-ui,sans-serif">Actualizar ahora</button><button id="updLater" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:9px;padding:9px 12px;font:600 13px system-ui,sans-serif">Después</button>';
@@ -2981,5 +2981,41 @@ function voidList(){const V=db.sales.filter(s=>s.void).slice().reverse();$('#dlg
 /* en el Resumen (Inicio) */
 {const _ev110=events;events=function(p){const r=_ev110.apply(this,arguments);try{if(p==='dashboard'&&!(db.users.length&&!me)){const v=document.getElementById('view');if(v&&!document.getElementById('dashVoid')){const V=db.sales.filter(s=>s.void),T=V.filter(s=>s.date===today()),last=V.slice(-5).reverse();v.insertAdjacentHTML('beforeend','<div class="card panel" id="dashVoid"><h2>🚫 Facturas anuladas</h2><p style="margin:4px 0 8px">Hoy: <b>'+T.length+'</b>'+(T.length?' por '+money(T.reduce((a,s)=>a+(+s.total||0),0)):'')+' · En total: <b>'+V.length+'</b></p>'+(last.length?voidRows(last):'<p class="sub">No hay facturas anuladas.</p>')+'<div class="actions">'+(V.length?'<button class="secondary small keep" onclick="voidList()">Ver todas las anuladas</button>':'')+'</div></div>')}}}catch(e){}return r}}
 
+/* ===== fix111: respaldo automático diario en la nube (sin depender de un botón) · etiquetas de CAJA con código y lectura con escáner (Ventas y Almacén) ===== */
+/* --- 1) respaldo automático --- */
+function cbkAuto(){try{if(typeof SYNC==='undefined'||!SYNC.on||SYNC.canWrite===false)return;if(cbkLast()===today())return;if(!cbkReady())return;if(db.users.length&&!me)return;if(navigator.onLine===false)return;cbkRun(false,false)}catch(e){}}
+setTimeout(cbkAuto,25000);setInterval(cbkAuto,600000);window.addEventListener('online',()=>setTimeout(cbkAuto,8000));
+{const _cc111=cbkCard;cbkCard=function(){return _cc111.apply(this,arguments).replace('Cada día el sistema guarda solo una copia completa','✅ <b>Automático:</b> cada día, cuando el sistema está abierto y con internet, guarda solo una copia completa')}}
+{const _cr111=cbkRestore;cbkRestore=async function(){const r=await _cr111.apply(this,arguments);try{['wprods','wbranches','wdocs','wpays'].forEach(k=>{if(db[k]!==undefined&&!Array.isArray(db[k]))db[k]=[]})}catch(e){}return r}}
+/* --- 2) códigos de caja --- */
+function presCode(p,k){const c=String(p&&p.code||'').trim();return c?c+'-C'+(k+1):''}
+function presCodeHit(code){const m=/^(.+)-C(\d{1,2})$/i.exec(String(code||'').trim());if(!m)return null;const base=m[1].toLowerCase(),k=+m[2]-1,p=db.products.find(x=>x.code&&String(x.code).trim().toLowerCase()===base);if(!p||!presOf(p)[k])return null;return{p,k}}
+{const _sa111=scanAddProduct;scanAddProduct=function(c){const h=presCodeHit(c);if(h){const pr=presOf(h.p)[h.k];if(avail(h.p)<+pr.q-1e-9)return '🚫 No alcanza para una '+pr.n+' de '+h.p.name;presAddLine(h.p.id,h.k);return '✅ 📦 '+pr.n+' de '+h.p.name}return _sa111.apply(this,arguments)}}
+document.addEventListener('keydown',e=>{if(e.key!=='Enter'||!e.target)return;const id=e.target.id;
+ if(id==='posSearch'){const h=presCodeHit(e.target.value);if(!h)return;e.preventDefault();e.stopImmediatePropagation();const m=scanAddProduct(e.target.value);e.target.value='';try{filterPos()}catch(_){}if(m&&!/^✅/.test(m))aviso(m);return}
+ if(id==='alS'){const v=String(e.target.value||'').trim(),lv=v.toLowerCase();if(!v)return;const W=db.wprods||[];let w=null,mode='u',bi=0;
+  const mm=/^(.+)-C(\d{1,2})$/i.exec(v);const byCode=c=>W.find(x=>(x.code&&String(x.code).trim().toLowerCase()===c)||(x.src&&(()=>{const p=db.products.find(q=>q.id===x.src);return p&&p.code&&String(p.code).trim().toLowerCase()===c})()));
+  if(mm){w=byCode(mm[1].toLowerCase());if(w&&wPres(w)[+mm[2]-1]){mode='b';bi=+mm[2]-1}else w=null}
+  if(!w)w=byCode(lv);if(!w)return;e.preventDefault();e.stopImmediatePropagation();almPut(w,mode,bi);e.target.value='';try{almGrid()}catch(_){}}},true);
+/* --- 3) etiquetas de caja --- */
+LBL.selB=LBL.selB||{};
+function lblBoxCopies(key,v){v=Math.max(0,Math.min(300,parseInt(v)||0));if(v>0)LBL.selB[key]=v;else delete LBL.selB[key];lblUpd()}
+{const _li111=lblItems;lblItems=function(){const out=_li111.apply(this,arguments),o=LBL.opt;db.products.forEach(p=>{presOf(p).forEach((pr,k)=>{const n=+LBL.selB[p.id+'_'+k]||0,c=presCode(p,k);for(let i=0;i<n&&out.length<600;i++)out.push({name:p.name+' · '+pr.n,price:lblMoney(presPrice(pr,o.li)),sub:'Trae '+qn(+pr.q)+' '+presU(p.unit),bc:o.bc&&c?bcFrom128(c):null,foot:lblFoot(o)})})});return out}}
+{const _ln111=lblInner;lblInner=function(){let h=_ln111.apply(this,arguments);const o=LBL.opt,B=db.products.filter(p=>presOf(p).length);if(!B.length)return h;
+ const t='<h3 style="margin:14px 0 6px">📦 Etiquetas de cajas / bolsas</h3><p class="sub">Para pegar en la caja. Al escanearla en <b>Ventas</b> entra la caja completa con su precio; en el <b>Almacén</b> entra al traslado. El código es el SKU del producto + <b>-C1</b> (primera presentación), <b>-C2</b>…</p><div class="lbllist"><table><tr><th>Producto · caja</th><th>Código</th><th class="num">Precio</th><th>Copias</th></tr>'+B.map(p=>presOf(p).map((pr,k)=>{const key=p.id+'_'+k,c=presCode(p,k);return '<tr><td>'+emo(p)+' '+esc(p.name)+' · <b>'+esc(pr.n)+'</b> <small>('+qn(+pr.q)+' '+esc(presU(p.unit))+')</small></td><td>'+(c?esc(c):'<span class="pill warn">sin SKU</span>')+'</td><td class="num">'+lblMoney(presPrice(pr,o.li))+'</td><td><input type="number" min="0" max="300" value="'+(LBL.selB[key]||0)+'" onchange="lblBoxCopies(\''+key+'\',this.value)"></td></tr>'}).join('')).join('')+'</table></div>';
+ return h.replace('<div id="lblWarn"></div>',t+'<div id="lblWarn"></div>')}}
+{const _lu111=lblUpd;lblUpd=function(){_lu111.apply(this,arguments);try{const w=$('#lblWarn');if(!w||!LBL.opt.bc)return;const sinB=db.products.filter(p=>!p.code&&presOf(p).some((_,k)=>LBL.selB[p.id+'_'+k])).length;if(sinB&&!w.innerHTML)w.innerHTML='<p class="licMsg" style="background:#fff4c4;border-radius:12px;padding:8px 12px;color:#5a4300;font-weight:700">⚠️ '+sinB+' caja(s) marcada(s) son de productos sin SKU: saldrán sin código de barras.'+(_isAdmin()?' <button class="small keep" onclick="lblAutoSku()">Asignar SKU automático</button>':'')+'</p>'}catch(e){}}}
+/* en el producto: mostrar el código de cada caja */
+{const _pr111=presRefresh;presRefresh=function(){const r=_pr111.apply(this,arguments);try{const f=document.getElementById('prodForm'),b=document.getElementById('presBox');if(!f||!b)return r;const c=f.elements.code.value.trim();let e=document.getElementById('presCodes');if(!e){b.insertAdjacentHTML('beforeend','<p id="presCodes" class="sub" style="margin:8px 0 0"></p>');e=document.getElementById('presCodes')}const L=[...b.querySelectorAll('.presN')].map((n,i)=>n.value.trim()?{n:n.value.trim(),i}:null).filter(Boolean);e.innerHTML=c&&L.length?'🏷️ Código para el escáner: '+L.map(x=>esc(x.n)+' → <b>'+esc(c)+'-C'+(x.i+1)+'</b>').join(' · '):(L.length?'🏷️ Ponga un SKU / Código al producto para poder imprimir etiquetas de la caja con código de barras.':'')}catch(e){}return r}}
+
+/* ===== fix112: recorrido visual — encabezado ordenado en celular, sin usuario/Salir repetidos (están en el menú), tablas con botones en fila ===== */
+(function(){const st=document.createElement('style');st.textContent=
+ 'body.navdrawer .top #userChip,body.navdrawer .top #logoutBtn{display:none!important}'+
+ '@media(max-width:700px){.main>.top{flex-direction:column;align-items:stretch;gap:8px}.main>.top>.actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-start}.main>.top>.actions>*{flex:0 0 auto;width:auto!important}.main>.top h1{font-size:26px}}'+
+ '.tablewrap td .actions{flex-wrap:nowrap}.tablewrap td>button{display:inline-block;width:auto;margin:2px 2px 2px 0}'+
+ '#lblCard .field label:has(input[type=checkbox]){display:flex;align-items:center;gap:8px;cursor:pointer}#lblCard .field label input[type=checkbox]{width:20px;height:20px;margin:0;flex:0 0 auto}@media(min-width:861px){body:not(.navdrawer) #navPin{font-size:0!important;padding:8px!important;margin:8px auto 0!important;display:block}body:not(.navdrawer) #navPin::before{content:"☰ Esconder";font-size:11px}}.tablewrap td .actions>button{white-space:nowrap}.tablewrap td>small{white-space:normal;display:inline-block;min-width:140px;max-width:240px}.hours{overflow-x:auto;overflow-y:hidden}';document.head.appendChild(st)})();
+
+function presbShort(root){try{(root||document).querySelectorAll('.productbtn .presb').forEach(e=>{const t=e.firstChild;if(t&&t.nodeType===3){const m=/^(📦\s*)(.*?)(:\s*)$/.exec(t.nodeValue);if(m&&m[2].length>16){t.nodeValue=m[1]+m[2].slice(0,15).trim()+'…'+m[3];e.title=m[2]}}})}catch(e){}}
+try{let _pbT=0;new MutationObserver(()=>{clearTimeout(_pbT);_pbT=setTimeout(()=>presbShort(document.getElementById('view')),30)}).observe(document.getElementById('view'),{childList:true,subtree:true})}catch(e){}
 (async()=>{await bootStore();syncLoadMeta();await load();gate();if(document.readyState==='complete')syncStart();else window.addEventListener('load',()=>syncStart());setTimeout(lowCheck,3500);setTimeout(backupCheck,9000);setInterval(backupCheck,900000);setTimeout(cobroCheck,6500);setTimeout(fixedRun,4000);setInterval(fixedRun,3600000);setTimeout(resumenCheck,12000);setInterval(resumenCheck,900000);try{themeTick();setInterval(themeTick,60000)}catch(e){}setTimeout(fxApply,3000);setInterval(fxApply,10800000);setTimeout(expCheck,8500);setInterval(expCheck,900000);setTimeout(badgeCobro,2500);setInterval(badgeCobro,300000);setInterval(cobroCheck,900000);setTimeout(cbkRun,25000);setInterval(cbkRun,1800000)})();
 </script></body></html>
