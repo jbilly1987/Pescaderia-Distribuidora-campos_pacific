@@ -1637,7 +1637,7 @@ async function tnAutoSync(){try{localStorage.removeItem('pesc_autosync')}catch(e
 window.addEventListener('load',()=>setTimeout(async()=>{try{if(!localStorage.getItem('pesc_autosync')||!window.firebase||typeof LIC_ON==='undefined'||!LIC_ON||!licLoad())return;fbReady();const u=await new Promise(r=>{const off=firebase.auth().onAuthStateChanged(x=>{off();r(x)})});if(u)await tnAutoSync();else localStorage.removeItem('pesc_autosync')}catch(e){}},2500));
 
 /* ===== fix45: aviso y aplicacion de actualizaciones (todos los clientes) ===== */
-const BUILD='20261126-0451';
+const BUILD='20261126-0503';
 function updBanner(v){if(document.getElementById('updBar'))return;const d=document.createElement('div');d.id='updBar';d.setAttribute('role','alert');
  d.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:99999;max-width:460px;margin:0 auto;background:#0f6e8c;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 8px 28px rgba(0,0,0,.35);font:600 14px/1.35 system-ui,sans-serif;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
  d.innerHTML='<span style="flex:1;min-width:180px">🔄 Hay una versión nueva del sistema.<br><small style="font-weight:400;opacity:.9">Si tiene una venta a medias, termínela y luego actualice.</small></span><button id="updGo" style="background:#f5c20c;color:#14232d;border:0;border-radius:9px;padding:9px 14px;font:700 14px system-ui,sans-serif">Actualizar ahora</button><button id="updLater" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:9px;padding:9px 12px;font:600 13px system-ui,sans-serif">Después</button>';
@@ -3063,7 +3063,7 @@ function ntSetOpt(k,v){const s=ntState();s[k]=v?1:0;ntSave(s);if(k==='snd'&&v)nt
  '@keyframes lhSweep{to{transform:rotate(360deg)}}@keyframes lhHalo{from{opacity:.55;transform:scale(.8)}to{opacity:1;transform:scale(1.25)}}'+
  '@media (prefers-reduced-motion:reduce){.lhBeam i{animation:none}}@media print{#qTools,.lhBeam{display:none!important}}';
  document.head.appendChild(st);
- const q=document.createElement('div');q.id='qTools';q.innerHTML='<button type="button" id="qSearch" onclick="openSearch()" title="Buscar en todo: tienda y almacén">🔍 <span>Buscar en todo…</span></button><span id="qSlotBell"></span><span id="qSlotLh"></span><button type="button" class="qic keep" id="qBk" title="Descargar respaldo" onclick="backup()">💾</button>';document.body.appendChild(q)})();
+ const q=document.createElement('div');q.id='qTools';q.innerHTML='<button type="button" id="qSearch" onclick="openSearch()" title="Buscar en todo: tienda y almacén">🔍 <span class="sl">Buscar en todo…</span><span class="ss">Buscar…</span></button><span id="qSlotBell"></span><span id="qSlotLh"></span><button type="button" class="qic keep" id="qBk" title="Descargar respaldo" onclick="backup()">💾</button>';document.body.appendChild(q)})();
 function qToolsPlace(){try{const q=document.getElementById('qTools'),a=document.querySelector('.top>.actions');if(!q||!a)return;const bell=document.getElementById('ntBell'),lh=document.getElementById('connection'),d=document.body.classList.contains('navdrawer');
  if(d){if(bell&&bell.parentElement!==q){bell.classList.add('qic');q.insertBefore(bell,document.getElementById('qSlotBell'))}if(lh&&lh.parentElement!==q)q.insertBefore(lh,document.getElementById('qSlotLh'))}
  else{if(bell&&bell.parentElement===q){bell.classList.remove('qic');a.insertBefore(bell,a.firstChild)}if(lh&&lh.parentElement===q){const lo=document.getElementById('logoutBtn');a.insertBefore(lh,lo||null)}}lhBeamPlace()}catch(e){}}
@@ -3141,6 +3141,46 @@ function lhSyncTxt(){let st=(typeof SYNC!=='undefined'&&SYNC.st)||'off';if(!navi
 function lhTap(e){try{if(e){e.preventDefault();e.stopPropagation()}const off=!lhOffGet();try{localStorage.setItem('pesc_lhoff',off?'1':'0')}catch(_){}lhApply();notify((off?'🌙 Luz del faro apagada':'💡 ¡La luz del faro está de vuelta!')+'\n'+lhSyncTxt());lhFixPlace()}catch(_){}}
 document.addEventListener('click',e=>{const c=e.target.closest&&e.target.closest('#connection');if(c)lhTap(e)},true);
 setTimeout(lhApply,200);
+
+/* ===== fix120: calculadora rápida (botón 🧮 entre el buscador y la campana) ===== */
+(function(){const st=document.createElement('style');st.textContent=
+ '#qSearch .ss{display:none}@media(max-width:1000px){body.qone #qSearch .sl{display:none}body.qone #qSearch .ss{display:inline}body.qone #qTools #connection .lht small{display:none}body.qone #qTools{gap:6px}body.qone #qSearch{padding:0 10px;gap:5px;font-size:14px}body.qone #qNav button{padding:9px 12px}}@media(max-width:520px){#qSearch .sl{display:none}#qSearch .ss{display:inline}}@media(max-width:420px){#qTools{gap:5px!important}#qTools .qic{width:40px!important;height:40px!important;font-size:17px!important}#qSearch{height:40px!important;padding:0 10px!important;gap:5px!important}#qSearch span{font-size:13px}#qTools #connection.lhc{height:44px!important;min-height:44px!important;padding:0 7px 0 0!important}#qTools #connection .lh{width:34px!important;height:44px!important}#qTools #connection .lht b{font-size:11px!important}}#calcBk{position:fixed;inset:0;z-index:9500;background:#0008;display:none;align-items:flex-start;justify-content:center;padding:calc(70px + env(safe-area-inset-top,0px)) 12px 12px}#calcBk.on{display:flex}'+
+ '#calc{width:min(360px,100%);background:var(--paper);color:var(--ink);border-radius:24px;box-shadow:0 20px 60px #0008;padding:14px;border:1px solid var(--line);animation:calcIn .22s ease-out}@keyframes calcIn{from{transform:translateY(-14px) scale(.96);opacity:0}}'+
+ '#calc .ch{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-weight:800}#calc .ch button{width:36px;height:36px;border-radius:50%;padding:0;font-size:18px}'+
+ '#calc .cd{background:color-mix(in srgb,var(--ink) 6%,transparent);border-radius:16px;padding:10px 14px;text-align:right;margin-bottom:10px;min-height:86px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}'+
+ '#calc .ce{font-size:16px;opacity:.7;min-height:22px;word-break:break-all}#calc .cr{font-size:34px;font-weight:900;word-break:break-all;line-height:1.15}'+
+ '#calc .cg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}#calc .cg button{height:58px;border-radius:16px;font-size:22px;font-weight:800;padding:0;border:1px solid var(--line);background:var(--bg);color:var(--ink);box-shadow:none}'+
+ '#calc .cg button.op{background:color-mix(in srgb,var(--tag,#f5c518) 22%,var(--bg));}#calc .cg button.eq{background:var(--tag,#f5c518);color:var(--tagink,#13232c)}#calc .cg button.cl{color:#e5484d}#calc .cg button:active{transform:scale(.94)}'+
+ '#calc .cx{display:flex;gap:8px;margin-top:10px}#calc .cx button{flex:1;padding:10px;border-radius:12px;font-size:14px}#calc .chist{max-height:90px;overflow:auto;font-size:13px;opacity:.75;margin-top:8px}#calc .chist div{display:flex;justify-content:space-between;gap:8px;cursor:pointer;padding:2px 0}';
+ document.head.appendChild(st);
+ const bk=document.createElement('div');bk.id='calcBk';bk.innerHTML='<div id="calc" onclick="event.stopPropagation()"><div class="ch"><span>🧮 Calculadora</span><button class="secondary keep" onclick="calcClose()">✕</button></div><div class="cd"><div class="ce" id="calcE"></div><div class="cr" id="calcR">0</div></div><div class="cg">'+
+ [['C','cl'],['⌫','op'],['%','op'],['÷','op'],['7'],['8'],['9'],['×','op'],['4'],['5'],['6'],['−','op'],['1'],['2'],['3'],['+','op'],['±','op'],['0'],[',',''],['=','eq']].map(([k,c])=>'<button type="button" class="keep '+(c||'')+'" onclick="calcKey(\''+k+'\')">'+k+'</button>').join('')+
+ '</div><div class="cx"><button class="secondary keep" onclick="calcCopy()">📋 Copiar resultado</button></div><div class="chist" id="calcH"></div></div>';
+ bk.onclick=()=>calcClose();document.body.appendChild(bk);
+ const q=document.getElementById('qTools');if(q){const b=document.createElement('button');b.type='button';b.className='qic keep';b.id='qCalc';b.title='Calculadora';b.textContent='🧮';b.onclick=calcOpen;const s=document.getElementById('qSearch');s.insertAdjacentElement('afterend',b)}})();
+const CALC={e:'',hist:[]};
+function calcFmt(n){if(!isFinite(n))return 'Error';const r=Math.round(n*1e8)/1e8;return r.toLocaleString('es-CR',{maximumFractionDigits:8})}
+function calcEval(s){const t=s.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-').replace(/,/g,'.');const tok=t.match(/\d*\.?\d+%?|[-+*/()]/g);if(!tok)return 0;let i=0;
+ const num=()=>{let x=tok[i];if(x==='-'){i++;return -num()}if(x==='+'){i++;return num()}if(x==='('){i++;const v=add();if(tok[i]===')')i++;return v}i++;if(x==null)return 0;return x.endsWith('%')?parseFloat(x)/100:parseFloat(x)};
+ const mul=()=>{let v=num();while(tok[i]==='*'||tok[i]==='/'){const o=tok[i++];let r=num();v=o==='*'?v*r:v/r}return v};
+ const add=()=>{let v=mul();while(tok[i]==='+'||tok[i]==='-'){const o=tok[i++];let r=mul();if(tok[i-1]&&String(tok[i-1]).endsWith('%')&&!/[*/]/.test(tok[i-2]||'')){}v=o==='+'?v+r:v-r}return v};
+ return add()}
+function calcPctFix(s){/* 1000 + 10% = 1100 (como las calculadoras comunes) */return s.replace(/(\d[\d,]*)\s*([+−])\s*(\d[\d,]*)%/g,(m,a,o,b)=>a+o+'('+a+'×'+b+'÷100)')}
+function calcPaint(){const e=document.getElementById('calcE'),r=document.getElementById('calcR');if(!e)return;e.textContent=CALC.e||'';let v='0';try{if(CALC.e){const x=calcEval(calcPctFix(CALC.e.replace(/[+−×÷]$/,'')));v=calcFmt(x)}}catch(_){v='…'}r.textContent=CALC.done?CALC.res:v;
+ const h=document.getElementById('calcH');if(h)h.innerHTML=CALC.hist.slice(-6).reverse().map((x,k)=>'<div onclick="CALC.e=\''+x.r.replace(/\./g,'').replace(/\s/g,'')+'\';CALC.done=false;calcPaint()"><span>'+esc(x.e)+' =</span><b>'+esc(x.r)+'</b></div>').join('')}
+function calcKey(k){const ops='+−×÷';let e=CALC.e||'';if(CALC.done){if(ops.includes(k)||k==='%'){e=CALC.raw}else if(k!=='='&&k!=='C'&&k!=='⌫'){e=''}CALC.done=false}
+ if(k==='C')e='';else if(k==='⌫')e=e.slice(0,-1);
+ else if(k==='='){if(!e)return;try{const x=calcEval(calcPctFix(e.replace(/[+−×÷]$/,'')));const res=calcFmt(x);CALC.hist.push({e,r:res});CALC.res=res;CALC.raw=String(Math.round(x*1e8)/1e8).replace('.',',');CALC.done=true;CALC.e=e;calcPaint();return}catch(_){return}}
+ else if(k==='±'){const m=e.match(/(.*?)(−?)(\d[\d,]*%?)$/);if(m)e=m[1]+(m[2]?'':'−')+m[3];else if(!e)e='−'}
+ else if(ops.includes(k)){if(!e&&k!=='−')return;if(ops.includes(e.slice(-1)))e=e.slice(0,-1);e+=k}
+ else if(k===','){const last=e.split(/[+−×÷]/).pop();if(last.includes(','))return;e+=(last===''?'0,':',')}
+ else if(k==='%'){if(/\d$/.test(e))e+='%'}
+ else{if(/%$/.test(e))e+='×';e+=k}
+ CALC.e=e;calcPaint()}
+function calcOpen(){document.getElementById('calcBk').classList.add('on');calcPaint()}
+function calcClose(){document.getElementById('calcBk').classList.remove('on')}
+async function calcCopy(){const v=(document.getElementById('calcR')||{}).textContent||'';try{await navigator.clipboard.writeText(v.replace(/\s/g,''));notify('📋 Copiado: '+v)}catch(e){notify('Resultado: '+v)}}
+document.addEventListener('keydown',e=>{const bk=document.getElementById('calcBk');if(!bk||!bk.classList.contains('on'))return;const m={'*':'×','/':'÷','-':'−','+':'+','Enter':'=','=':'=','Backspace':'⌫','Escape':'esc',',':',','.':',','%':'%','Delete':'C'};let k=/^\d$/.test(e.key)?e.key:m[e.key];if(!k)return;e.preventDefault();if(k==='esc')return calcClose();calcKey(k)},true);
 
 (async()=>{await bootStore();syncLoadMeta();await load();gate();if(document.readyState==='complete')syncStart();else window.addEventListener('load',()=>syncStart());setTimeout(lowCheck,3500);setTimeout(backupCheck,9000);setInterval(backupCheck,900000);setTimeout(cobroCheck,6500);setTimeout(fixedRun,4000);setInterval(fixedRun,3600000);setTimeout(resumenCheck,12000);setInterval(resumenCheck,900000);try{themeTick();setInterval(themeTick,60000)}catch(e){}setTimeout(fxApply,3000);setInterval(fxApply,10800000);setTimeout(expCheck,8500);setInterval(expCheck,900000);setTimeout(badgeCobro,2500);setInterval(badgeCobro,300000);setInterval(cobroCheck,900000);setTimeout(cbkRun,25000);setInterval(cbkRun,1800000)})();
 </script></body></html>
