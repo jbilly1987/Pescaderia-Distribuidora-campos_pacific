@@ -1637,7 +1637,7 @@ async function tnAutoSync(){try{localStorage.removeItem('pesc_autosync')}catch(e
 window.addEventListener('load',()=>setTimeout(async()=>{try{if(!localStorage.getItem('pesc_autosync')||!window.firebase||typeof LIC_ON==='undefined'||!LIC_ON||!licLoad())return;fbReady();const u=await new Promise(r=>{const off=firebase.auth().onAuthStateChanged(x=>{off();r(x)})});if(u)await tnAutoSync();else localStorage.removeItem('pesc_autosync')}catch(e){}},2500));
 
 /* ===== fix45: aviso y aplicacion de actualizaciones (todos los clientes) ===== */
-const BUILD='20261126-0517';
+const BUILD='20261126-0522';
 function updBanner(v){if(document.getElementById('updBar'))return;const d=document.createElement('div');d.id='updBar';d.setAttribute('role','alert');
  d.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:99999;max-width:460px;margin:0 auto;background:#0f6e8c;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 8px 28px rgba(0,0,0,.35);font:600 14px/1.35 system-ui,sans-serif;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
  d.innerHTML='<span style="flex:1;min-width:180px">🔄 Hay una versión nueva del sistema.<br><small style="font-weight:400;opacity:.9">Si tiene una venta a medias, termínela y luego actualice.</small></span><button id="updGo" style="background:#f5c20c;color:#14232d;border:0;border-radius:9px;padding:9px 14px;font:700 14px system-ui,sans-serif">Actualizar ahora</button><button id="updLater" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:9px;padding:9px 12px;font:600 13px system-ui,sans-serif">Después</button>';
@@ -3183,7 +3183,7 @@ async function calcCopy(){const v=(document.getElementById('calcR')||{}).textCon
 document.addEventListener('keydown',e=>{const bk=document.getElementById('calcBk');if(!bk||!bk.classList.contains('on'))return;const m={'*':'×','/':'÷','-':'−','+':'+','Enter':'=','=':'=','Backspace':'⌫','Escape':'esc',',':',','.':',','%':'%','Delete':'C'};let k=/^\d$/.test(e.key)?e.key:m[e.key];if(!k)return;e.preventDefault();if(k==='esc')return calcClose();calcKey(k)},true);
 
 /* ===== fix121: luz del faro más suave · decoración de temporada automática (fiestas de Costa Rica) en la animación ===== */
-(function(){const st=document.createElement('style');st.textContent='#lhFix i{opacity:.36!important}#lhFix b{opacity:.45!important}body:not(.dark) #lhFix i{opacity:.22!important}body:not(.dark) #lhFix b{opacity:.3!important}'+
+(function(){const st=document.createElement('style');st.textContent='#lhFix i{opacity:.46!important}#lhFix b{opacity:.55!important}body:not(.dark) #lhFix i{opacity:.32!important}body:not(.dark) #lhFix b{opacity:.4!important}'+
  '.sfx{position:absolute;inset:0;pointer-events:none;z-index:5;overflow:hidden}.sfx>*{position:absolute}'+
  '.sfx .lights{height:12px;display:flex;justify-content:space-between;align-items:flex-start}.sfx .lights::before{content:"";position:absolute;left:0;right:0;top:3px;border-top:1.5px solid #1a2b20;border-radius:50%}.sfx .lights i{width:7px;height:9px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;margin-top:3px;animation:sfxBlink 1.2s ease-in-out infinite;box-shadow:0 0 8px currentColor;background:currentColor}'+
  '.sfx .lights i:nth-child(4n+1){color:#ff3b3b}.sfx .lights i:nth-child(4n+2){color:#ffd23f;animation-delay:.3s}.sfx .lights i:nth-child(4n+3){color:#3bff7a;animation-delay:.6s}.sfx .lights i:nth-child(4n){color:#3bb7ff;animation-delay:.9s}'+
