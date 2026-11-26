@@ -1637,7 +1637,7 @@ async function tnAutoSync(){try{localStorage.removeItem('pesc_autosync')}catch(e
 window.addEventListener('load',()=>setTimeout(async()=>{try{if(!localStorage.getItem('pesc_autosync')||!window.firebase||typeof LIC_ON==='undefined'||!LIC_ON||!licLoad())return;fbReady();const u=await new Promise(r=>{const off=firebase.auth().onAuthStateChanged(x=>{off();r(x)})});if(u)await tnAutoSync();else localStorage.removeItem('pesc_autosync')}catch(e){}},2500));
 
 /* ===== fix45: aviso y aplicacion de actualizaciones (todos los clientes) ===== */
-const BUILD='20261126-0431';
+const BUILD='20261126-0434';
 function updBanner(v){if(document.getElementById('updBar'))return;const d=document.createElement('div');d.id='updBar';d.setAttribute('role','alert');
  d.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:99999;max-width:460px;margin:0 auto;background:#0f6e8c;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 8px 28px rgba(0,0,0,.35);font:600 14px/1.35 system-ui,sans-serif;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
  d.innerHTML='<span style="flex:1;min-width:180px">🔄 Hay una versión nueva del sistema.<br><small style="font-weight:400;opacity:.9">Si tiene una venta a medias, termínela y luego actualice.</small></span><button id="updGo" style="background:#f5c20c;color:#14232d;border:0;border-radius:9px;padding:9px 14px;font:700 14px system-ui,sans-serif">Actualizar ahora</button><button id="updLater" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:9px;padding:9px 12px;font:600 13px system-ui,sans-serif">Después</button>';
@@ -3103,6 +3103,16 @@ function qOneLine(){try{const q=document.getElementById('qTools'),n=document.get
 {const _qp116=qToolsPlace;qToolsPlace=function(){const r=_qp116.apply(this,arguments);qOneLine();return r}}
 {const _mu116=menuUserPaint;menuUserPaint=function(){const r=_mu116.apply(this,arguments);setTimeout(qOneLine,0);return r}}
 addEventListener('resize',()=>setTimeout(qOneLine,60));setTimeout(qOneLine,700);setInterval(qOneLine,3000);
+
+/* ===== fix117: en la pantalla de entrar (login) no se ven el menú, el buscador ni la barra de arriba ===== */
+(function(){const st=document.createElement('style');st.textContent='body.nologin #qTools,body.nologin #qNav,body.nologin #menuBtn,body.nologin #navBk,body.nologin .side,body:has(#login.on) #qTools,body:has(#login.on) #qNav,body:has(#login.on) #menuBtn,body:has(#login.on) #navBk,body:has(#login.on) .side{display:none!important}';document.head.appendChild(st)})();
+function loginGuard(){try{const out=!!(db.users.length&&!me)||!!(document.getElementById('login')||{classList:{contains:()=>false}}).classList.contains('on');document.body.classList.toggle('nologin',out);if(out){try{navClose()}catch(e){}}}catch(e){}}
+{const _no117=navOpen;navOpen=function(){if(db.users.length&&!me)return;return _no117.apply(this,arguments)}}
+{const _os117=openSearch;openSearch=function(){if(db.users.length&&!me)return;return _os117.apply(this,arguments)}}
+{const _lo117=logout;logout=function(){const r=_lo117.apply(this,arguments);loginGuard();setTimeout(loginGuard,50);return r}}
+{const _aa117=applyAccess;applyAccess=function(){const r=_aa117.apply(this,arguments);loginGuard();return r}}
+{const _gt117=gate;gate=function(){const r=_gt117.apply(this,arguments);loginGuard();return r}}
+setInterval(loginGuard,1000);setTimeout(loginGuard,100);
 
 (async()=>{await bootStore();syncLoadMeta();await load();gate();if(document.readyState==='complete')syncStart();else window.addEventListener('load',()=>syncStart());setTimeout(lowCheck,3500);setTimeout(backupCheck,9000);setInterval(backupCheck,900000);setTimeout(cobroCheck,6500);setTimeout(fixedRun,4000);setInterval(fixedRun,3600000);setTimeout(resumenCheck,12000);setInterval(resumenCheck,900000);try{themeTick();setInterval(themeTick,60000)}catch(e){}setTimeout(fxApply,3000);setInterval(fxApply,10800000);setTimeout(expCheck,8500);setInterval(expCheck,900000);setTimeout(badgeCobro,2500);setInterval(badgeCobro,300000);setInterval(cobroCheck,900000);setTimeout(cbkRun,25000);setInterval(cbkRun,1800000)})();
 </script></body></html>
