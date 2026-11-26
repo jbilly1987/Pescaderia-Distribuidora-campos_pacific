@@ -1637,7 +1637,7 @@ async function tnAutoSync(){try{localStorage.removeItem('pesc_autosync')}catch(e
 window.addEventListener('load',()=>setTimeout(async()=>{try{if(!localStorage.getItem('pesc_autosync')||!window.firebase||typeof LIC_ON==='undefined'||!LIC_ON||!licLoad())return;fbReady();const u=await new Promise(r=>{const off=firebase.auth().onAuthStateChanged(x=>{off();r(x)})});if(u)await tnAutoSync();else localStorage.removeItem('pesc_autosync')}catch(e){}},2500));
 
 /* ===== fix45: aviso y aplicacion de actualizaciones (todos los clientes) ===== */
-const BUILD='20261126-1418';
+const BUILD='20261126-1617';
 function updBanner(v){if(document.getElementById('updBar'))return;const d=document.createElement('div');d.id='updBar';d.setAttribute('role','alert');
  d.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:99999;max-width:460px;margin:0 auto;background:#0f6e8c;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 8px 28px rgba(0,0,0,.35);font:600 14px/1.35 system-ui,sans-serif;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
  d.innerHTML='<span style="flex:1;min-width:180px">🔄 Hay una versión nueva del sistema.<br><small style="font-weight:400;opacity:.9">Si tiene una venta a medias, termínela y luego actualice.</small></span><button id="updGo" style="background:#f5c20c;color:#14232d;border:0;border-radius:9px;padding:9px 14px;font:700 14px system-ui,sans-serif">Actualizar ahora</button><button id="updLater" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:9px;padding:9px 12px;font:600 13px system-ui,sans-serif">Después</button>';
@@ -3202,7 +3202,7 @@ function seasonAuto(d){d=d||new Date();const m=d.getMonth()+1,day=d.getDate(),md
  const e=easterDate(y),ps=new Date(e);ps.setDate(e.getDate()-7);const t=new Date(y,m-1,day);if(t>=ps&&t<=e)return 'santa';
  if(md>=409&&md<=411)return 'juan';if(md>=720&&md<=725)return 'guanacaste';if(md>=812&&md<=815)return 'madre';if(md>=901&&md<=915)return 'independencia';if(md>=1025&&md<=1031)return 'halloween';return ''}
 function seasonCur(){const s=db.settings.season||'auto';if(s==='off')return '';if(s==='auto')return seasonAuto();return SEASONS[s]?s:''}
-function seasonApply(){try{const sea=document.querySelector('.sea.rd');if(!sea)return;let fx=sea.querySelector('.sfx');const k=seasonCur();if(!k){if(fx)fx.remove();return}
+function seasonApply(){if(typeof window.__sa2==='function'&&window.__sa2())return;try{const sea=document.querySelector('.sea.rd');if(!sea)return;let fx=sea.querySelector('.sfx');const k=seasonCur();if(!k){if(fx)fx.remove();return}
  if(!fx){fx=document.createElement('div');fx.className='sfx';sea.appendChild(fx)}
  const S=sea.getBoundingClientRect(),shop=sea.querySelector('.rshop'),R=shop?shop.getBoundingClientRect():null;if(!S.width)return;
  const sx=R?R.left-S.left:S.width*.4,sy=R?R.top-S.top:30,sw=R?R.width:160,sh=R?R.height:60,bot=S.height,y=new Date().getFullYear();
@@ -3222,7 +3222,7 @@ function seasonApply(){try{const sea=document.querySelector('.sea.rd');if(!sea)r
 addEventListener('resize',()=>setTimeout(seasonApply,150));setTimeout(seasonApply,900);setInterval(seasonApply,4000);
 /* opción en Configuración */
 function seasonSet(v){db.settings.season=v;save();const sea=document.querySelector('.sea.rd .sfx');if(sea)sea.dataset.k='';seasonApply();notify(v==='off'?'Decoración de temporada apagada':v==='auto'?'🎉 Decoración automática según la fecha'+(seasonAuto()?' · hoy: '+SEASONS[seasonAuto()]:''):'🎉 '+SEASONS[v])}
-{const _cp121=configPage;configPage=function(){const h=_cp121.apply(this,arguments),s=db.settings.season||'auto',a=seasonAuto();return h+'<div class="card panel"><h2>🎉 Decoración de temporada</h2><p class="sub">La animación de arriba se decora sola según la fecha: Navidad (15 nov – 30 dic), Año Nuevo, Día del Amor y la Amistad, Semana Santa, Juan Santamaría, Anexión de Guanacaste, Día de la Madre, Independencia (1 – 15 de setiembre) y Halloween. '+(a?'Hoy toca: <b>'+SEASONS[a]+'</b>.':'Hoy no hay fiesta: la animación va normal.')+'</p><div class="field"><label>Decoración</label><select onchange="seasonSet(this.value)"><option value="auto"'+(s==='auto'?' selected':'')+'>Automática (según la fecha)</option><option value="off"'+(s==='off'?' selected':'')+'>Apagada</option>'+Object.keys(SEASONS).map(k=>'<option value="'+k+'"'+(s===k?' selected':'')+'>Siempre: '+SEASONS[k]+'</option>').join('')+'</select></div></div>'}}
+{const _cp121=configPage;configPage=function(){const h=_cp121.apply(this,arguments),s=db.settings.season||'auto',a=seasonAuto();return h+'<div class="card panel"><h2>🎉 Decoración de temporada</h2><p class="sub">La animación de arriba se decora sola según la fecha: Navidad (15 nov – 30 dic), Año Nuevo, Día del Amor y la Amistad, Día del Boyero, Semana Santa, Juan Santamaría, Día del Trabajador, Día del Padre, San Pedro (patrono de los pescadores), Virgen del Mar, Anexión de Guanacaste, Virgen de los Ángeles, Día de la Madre, Día de la Persona Negra y la Cultura Afrocostarricense, Independencia, Día del Niño, Día de las Culturas, Halloween y Día de la Mascarada. '+(a?'Hoy toca: <b>'+SEASONS[a]+'</b>.':'Hoy no hay fiesta: la animación va normal.')+'</p><div class="field"><label>Decoración</label><select onchange="seasonSet(this.value)"><option value="auto"'+(s==='auto'?' selected':'')+'>Automática (según la fecha)</option><option value="off"'+(s==='off'?' selected':'')+'>Apagada</option>'+Object.keys(SEASONS).map(k=>'<option value="'+k+'"'+(s===k?' selected':'')+'>Siempre: '+SEASONS[k]+'</option>').join('')+'</select></div></div>'}}
 
 /* ===== fix122: en Buscar, cada resultado se puede tocar y lleva a donde se trabaja; dice en qué apartado está ===== */
 (function(){const st=document.createElement('style');st.textContent='#gsOut .sr.go{cursor:pointer;border-radius:12px;padding:8px 10px!important;margin:4px 0;border:1px solid var(--line);display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;transition:background .15s}#gsOut .sr.go:hover,#gsOut .sr.go:active{background:color-mix(in srgb,var(--tag,#f5c518) 16%,transparent)}#gsOut .sr.go>span:first-child{flex:1 1 220px;min-width:0}#gsOut .gsw{font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;background:color-mix(in srgb,var(--ink) 10%,transparent);white-space:nowrap}#gsOut .gsb{display:flex;gap:6px;flex-wrap:wrap}#gsOut .gsb button{padding:5px 10px;font-size:13px}';document.head.appendChild(st)})();
@@ -3312,5 +3312,36 @@ function czAuto(){let v=$('#view');if(!v)return;if(currentPage==='ventas')return
 try{let o=JSON.parse(localStorage.getItem('pesc_czopen')||'{}');for(let k in o)if(OPENS[k]===undefined)OPENS[k]=o[k]}catch(e){}
 {const _pr=postRender;postRender=function(){_pr();try{czAuto()}catch(e){console.warn(e)}}}
 {const st=document.createElement('style');st.textContent='.cz-n.cz-z{background:#fde8e4!important;color:#b23a26}.cz-n.cz-ok{background:#e2f5e9!important;color:#1d7a46}body.dark .cz-n.cz-ok{background:#1f3d2c!important;color:#9fe3b9}body.dark .cz-n.cz-z{background:#4a2520!important;color:#ffb4a6}.czAuto>summary{flex-wrap:wrap}.czAuto .cz-r{flex-wrap:wrap;justify-content:flex-end}';document.head.appendChild(st)}
+/* fix130: más fechas de temporada (Costa Rica) */
+const SEA2={
+ boyero:{n:'🐂 Día del Boyero',ban:'🐂 ¡Feliz Día del Boyero!',bg:'linear-gradient(90deg,#b45309,#15803d)',fl:['🌼','🐂'],side:['🛞','🐂'],bunt:'cr'},
+ trabajador:{n:'🛠️ Día del Trabajador',ban:'🛠️ ¡Feliz Día del Trabajador!',bg:'linear-gradient(90deg,#1d4ed8,#0f766e)',fl:['🛠️','💪'],side:['🎣','🛠️']},
+ padre:{n:'👔 Día del Padre',ban:'👔 ¡Feliz Día del Padre!',bg:'linear-gradient(90deg,#1e3a8a,#0e7490)',fl:['💙','👔'],side:['🎣','🎁']},
+ sanpedro:{n:'🎣 San Pedro, patrono de los pescadores',ban:'🎣 ¡Feliz San Pedro, pescadores!',bg:'linear-gradient(90deg,#0369a1,#0f766e)',fl:['🐟','🎣'],side:['⛵','🐠'],bunt:'mar'},
+ virgenmar:{n:'⛵ Fiesta de la Virgen del Mar',ban:'⛵ Fiesta de la Virgen del Mar',bg:'linear-gradient(90deg,#0c4a6e,#2563eb)',fl:['⛵','🌊'],side:['⛵','🚤'],bunt:'mar'},
+ negrita:{n:'🙏 Virgen de los Ángeles',ban:'🙏 Día de la Virgen de los Ángeles',bg:'linear-gradient(90deg,#1e3a8a,#a16207)',fl:['🕊️','🌹'],side:['🕯️','🌹']},
+ afro:{n:'✊🏾 Día de la Cultura Afrocostarricense',ban:'✊🏾 ¡Viva la cultura afrocostarricense!',bg:'linear-gradient(90deg,#b91c1c,#ca8a04,#15803d)',fl:['🥁','🌴','🥥'],side:['🥁','🌴'],bunt:'afro'},
+ nino:{n:'🎈 Día del Niño',ban:'🎈 ¡Feliz Día del Niño!',bg:'linear-gradient(90deg,#f59e0b,#ec4899,#3b82f6)',fl:['🎈','🎈','🍭'],side:['🎈','🧸'],bunt:'cr'},
+ culturas:{n:'🌎 Día de las Culturas',ban:'🌎 ¡Feliz Día de las Culturas!',bg:'linear-gradient(90deg,#9333ea,#ea580c,#16a34a)',fl:['🌎','🎭','🪇'],side:['🎭','🌎'],bunt:'afro'},
+ mascarada:{n:'🎭 Día de la Mascarada',ban:'🎭 ¡Día de la Mascarada Tradicional!',bg:'linear-gradient(90deg,#7c2d12,#c2410c)',fl:['🎭','🎺'],side:['🎭','🥁'],bunt:'cr'}
+};
+for(const k in SEA2)SEASONS[k]=SEA2[k].n;
+function nthSun(y,m,n){const d=new Date(y,m-1,1);const off=(7-d.getDay())%7;return new Date(y,m-1,1+off+(n-1)*7)}
+function inWin(t,end,days){const s=new Date(end);s.setDate(end.getDate()-days);return t>=s&&t<=end}
+{const _sa=seasonAuto;seasonAuto=function(d){d=d||new Date();const m=d.getMonth()+1,day=d.getDate(),md=m*100+day,y=d.getFullYear(),t=new Date(y,m-1,day);
+ if(inWin(t,nthSun(y,3,2),2))return 'boyero';if(md>=430&&md<=501)return 'trabajador';if(inWin(t,nthSun(y,6,3),2))return 'padre';
+ if(md>=627&&md<=629)return 'sanpedro';if(md>=714&&md<=716)return 'virgenmar';if(md>=801&&md<=802)return 'negrita';if(md>=829&&md<=831)return 'afro';
+ if(md===909)return 'nino';if(md>=1010&&md<=1012)return 'culturas';if(md===1031)return 'mascarada';return _sa(d)}}
+window.__sa2=function(){try{const k=seasonCur();const c=SEA2[k];if(!c)return false;
+ const sea=document.querySelector('.sea.rd');if(!sea)return true;let fx=sea.querySelector('.sfx');if(!fx){fx=document.createElement('div');fx.className='sfx';sea.appendChild(fx)}
+ const S=sea.getBoundingClientRect(),shop=sea.querySelector('.rshop'),R=shop?shop.getBoundingClientRect():null;if(!S.width)return true;
+ const sx=R?R.left-S.left:S.width*.4,sy=R?R.top-S.top:30,sw=R?R.width:160,sh=R?R.height:60;
+ const key=k+'|'+Math.round(S.width)+'|'+Math.round(sx)+'|'+Math.round(sw);if(fx.dataset.k===key)return true;fx.dataset.k=key;
+ const dots=n=>Array.from({length:n},()=>'<i></i>').join('');let h='';
+ if(c.bunt){const n=Math.max(10,Math.round(sw/12));h+='<div class="bunt b-'+c.bunt+'" style="left:'+(sx+2)+'px;top:'+(sy-2)+'px;width:'+(sw-4)+'px">'+dots(n)+'</div><div class="bunt b-'+c.bunt+'" style="left:4%;top:28%;width:30%">'+dots(10)+'</div><div class="bunt b-'+c.bunt+'" style="left:66%;top:28%;width:30%">'+dots(10)+'</div>'}
+ for(let i=0;i<7;i++)h+='<span class="fl" style="left:'+(6+i*14)+'%;animation-delay:'+(i*.8)+'s">'+c.fl[i%c.fl.length]+'</span>';
+ h+='<span class="emo" style="left:'+Math.max(4,sx-38)+'px;top:'+(sy+sh-36)+'px">'+c.side[0]+'</span><span class="emo" style="left:'+(sx+sw+6)+'px;top:'+(sy+sh-34)+'px">'+c.side[1]+'</span>';
+ h+='<div class="ban" style="background:'+c.bg+'">'+c.ban+'</div>';fx.innerHTML=h}catch(e){console.warn(e)}return true};
+{const st=document.createElement('style');st.textContent='.sfx .bunt.b-afro i:nth-child(3n+1){border-top-color:#c8102e}.sfx .bunt.b-afro i:nth-child(3n+2){border-top-color:#f2c500}.sfx .bunt.b-afro i:nth-child(3n){border-top-color:#009b3a}.sfx .bunt.b-mar i:nth-child(3n+1){border-top-color:#0ea5e9}.sfx .bunt.b-mar i:nth-child(3n+2){border-top-color:#fff}.sfx .bunt.b-mar i:nth-child(3n){border-top-color:#1e40af}.sfx .ban{white-space:normal!important;text-overflow:clip!important;line-height:1.15;border-radius:12px!important;text-align:center;max-height:3.2em}';document.head.appendChild(st)}
 (async()=>{await bootStore();syncLoadMeta();await load();gate();if(document.readyState==='complete')syncStart();else window.addEventListener('load',()=>syncStart());setTimeout(lowCheck,3500);setTimeout(backupCheck,9000);setInterval(backupCheck,900000);setTimeout(cobroCheck,6500);setTimeout(fixedRun,4000);setInterval(fixedRun,3600000);setTimeout(resumenCheck,12000);setInterval(resumenCheck,900000);try{themeTick();setInterval(themeTick,60000)}catch(e){}setTimeout(fxApply,3000);setInterval(fxApply,10800000);setTimeout(expCheck,8500);setInterval(expCheck,900000);setTimeout(badgeCobro,2500);setInterval(badgeCobro,300000);setInterval(cobroCheck,900000);setTimeout(cbkRun,25000);setInterval(cbkRun,1800000)})();
 </script></body></html>
