@@ -1640,7 +1640,7 @@ async function tnAutoSync(){try{localStorage.removeItem('pesc_autosync')}catch(e
 window.addEventListener('load',()=>setTimeout(async()=>{try{if(!localStorage.getItem('pesc_autosync')||!window.firebase||typeof LIC_ON==='undefined'||!LIC_ON||!licLoad())return;fbReady();const u=await new Promise(r=>{const off=firebase.auth().onAuthStateChanged(x=>{off();r(x)})});if(u)await tnAutoSync();else localStorage.removeItem('pesc_autosync')}catch(e){}},2500));
 
 /* ===== fix45: aviso y aplicacion de actualizaciones (todos los clientes) ===== */
-const BUILD='20261127-0430';
+const BUILD='20261127-0439';
 function updBanner(v){if(document.getElementById('updBar'))return;const d=document.createElement('div');d.id='updBar';d.setAttribute('role','alert');
  d.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:99999;max-width:460px;margin:0 auto;background:#0f6e8c;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 8px 28px rgba(0,0,0,.35);font:600 14px/1.35 system-ui,sans-serif;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
  d.innerHTML='<span style="flex:1;min-width:180px">🔄 Hay una versión nueva del sistema.<br><small style="font-weight:400;opacity:.9">Si tiene una venta a medias, termínela y luego actualice.</small></span><button id="updGo" style="background:#f5c20c;color:#14232d;border:0;border-radius:9px;padding:9px 14px;font:700 14px system-ui,sans-serif">Actualizar ahora</button><button id="updLater" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:9px;padding:9px 12px;font:600 13px system-ui,sans-serif">Después</button>';
@@ -3882,5 +3882,50 @@ document.addEventListener('submit',e=>{const f=e.target;if(!f||!f.getAttribute||
  if(cb&&ph){if(!w){w=document.createElement('a');w.id='chWA';w.className='btnlink small keep';w.target='_blank';w.rel='noopener';cb.insertAdjacentElement('afterend',w)}w.textContent='💬 WhatsApp';w.href='https://wa.me/'+phoneDigits(ph);w.hidden=false}else if(w)w.hidden=true}catch(e){}return r}}
 // pedir permiso por WhatsApp si el administrador no está en línea
 {const _aa=authAsk;authAsk=function(what){const p=_aa.apply(this,arguments);setTimeout(()=>{try{const o=document.getElementById('authOv');if(!o||o.querySelector('#auWA'))return;const adm=db.users.filter(u=>u.role==='admin'&&u.active!==false&&u.phone);if(!adm.length)return;const u=chatMe()||{name:(me&&me.name)||''};const txt='🔒 *'+(u.name||'Un usuario')+'* pide permiso en el sistema de '+(db.settings.business||'la pescadería')+' para:\n\n'+what+'\n\nAbra el sistema y autorícelo, o dígale la contraseña.';o.querySelector('#auRem').insertAdjacentHTML('afterend','<a id="auWA" class="btnlink keep" style="display:block;text-align:center;margin-top:6px" target="_blank" rel="noopener" href="https://wa.me/'+phoneDigits(adm[0].phone)+'?text='+encodeURIComponent(txt)+'">💬 Avisarle por WhatsApp a '+esc(adm[0].name)+'</a>')}catch(e){}},30);return p}}
+/* fix151: catálogo más lindo, con el logo grande de fondo como marca de agua (PDF, impreso y en pantalla) */
+function catLogo(){const l=db.settings.logo;return l&&/^data:image\/(png|jpe?g)/i.test(l)?l:(typeof DEF_LOGO!=='undefined'?DEF_LOGO:'')}
+catPdf=async function(){if(!(window.jspdf&&window.jspdf.jsPDF))return aviso('El generador de PDF necesita internet y todavía no cargó. Intente de nuevo en unos segundos.');const{li,G}=catData(),b=db.settings,d=new window.jspdf.jsPDF({unit:'mm',format:'letter'}),W=216,H=279,M=14,logo=catLogo();let y=0,pg=0;
+ const cl=t=>String(t==null?'':t).replace(/₡/g,'CRC ').replace(/[   ]/g,' ').replace(/[–—]/g,'-').replace(/[^\x20-\xff]/g,'').trim();
+ let lw=0,lh=0;try{if(logo){const pr=d.getImageProperties(logo),mx=W*0.82,my=H*0.62,r=Math.min(mx/pr.width,my/pr.height);lw=pr.width*r;lh=pr.height*r}}catch(e){}
+ const wm=()=>{if(!lw)return;try{d.saveGraphicsState&&d.saveGraphicsState();if(d.GState)d.setGState(new d.GState({opacity:0.075}));d.addImage(logo,/jpe?g/i.test(logo.slice(0,24))?'JPEG':'PNG',(W-lw)/2,(H-lh)/2+8,lw,lh,'wm','FAST');if(d.GState)d.setGState(new d.GState({opacity:1}));d.restoreGraphicsState&&d.restoreGraphicsState()}catch(e){}};
+ const head=()=>{pg++;wm();d.setFillColor(12,74,110);d.rect(0,0,W,34,'F');d.setFillColor(14,165,233);d.rect(0,34,W,2.2,'F');
+  try{if(logo)d.addImage(logo,/jpe?g/i.test(logo.slice(0,24))?'JPEG':'PNG',M,5,24,24,'lg','FAST')}catch(e){}
+  const tx=logo?M+29:M;d.setTextColor(255,255,255);d.setFont('helvetica','bold');d.setFontSize(19);d.text(cl(b.business||'Pescadería'),tx,15);d.setFont('helvetica','normal');d.setFontSize(10.5);d.text(cl('Lista de precios · '+fmtDate(today())+(b.priceLists.length>1?' · '+b.priceLists[li]:'')),tx,22);if(b.phone){d.setFont('helvetica','bold');d.text(cl('Pedidos: '+b.phone),tx,28.5)}
+  d.setTextColor(20,35,44);y=46};
+ const foot=()=>{d.setFontSize(8.5);d.setTextColor(110,120,128);d.setFont('helvetica','normal');d.text(cl('Precios sujetos a cambio sin previo aviso.'+(b.phone?' Escríbanos su pedido al '+b.phone+'.':'')),M,H-8);d.text(String(pg),W-M,H-8,{align:'right'})};
+ head();
+ Object.entries(G).forEach(([c,L])=>{if(y>H-40){foot();d.addPage();head()}
+  d.setFillColor(224,242,254);d.roundedRect(M,y-5.5,W-2*M,8.5,2,2,'F');d.setFont('helvetica','bold');d.setFontSize(12);d.setTextColor(12,74,110);d.text(cl(c).toUpperCase(),M+3,y+0.6);y+=9;d.setTextColor(20,35,44);let alt=0;
+  L.forEach(x=>{const rows=1+x.boxes.length,hh=rows*6+2;if(y+hh>H-18){foot();d.addPage();head()}
+   if(alt++%2){d.setFillColor(246,250,252);d.rect(M,y-4.6,W-2*M,hh-0.6,'F')}
+   d.setFont('helvetica','bold');d.setFontSize(11.2);d.text(cl(x.p.name),M+3,y);
+   const pr=cl(money(x.offer!=null?x.offer:x.base))+' / '+cl(x.p.unit);if(x.offer!=null){d.setTextColor(185,28,28);d.text(pr,W-M-3,y,{align:'right'});d.setFontSize(8);d.text('OFERTA · antes '+cl(money(x.base)),W-M-3-d.getTextWidth(pr)-3,y,{align:'right'});d.setTextColor(20,35,44)}else{d.setTextColor(12,74,110);d.text(pr,W-M-3,y,{align:'right'});d.setTextColor(20,35,44)}
+   y+=6;d.setFont('helvetica','normal');d.setFontSize(9.8);x.boxes.forEach(r=>{d.setTextColor(70,85,95);d.text(cl('   '+r.n+' ('+qn(r.q)+' '+x.p.unit+')'),M+3,y);d.setFont('helvetica','bold');d.setTextColor(12,74,110);d.text(cl(money(r.price)),W-M-3,y,{align:'right'});d.setFont('helvetica','normal');y+=5.6});d.setTextColor(20,35,44);y+=2});y+=4});
+ foot();
+ const blob=d.output('blob'),name='lista-de-precios-'+today()+'.pdf';try{const f=new File([blob],name,{type:'application/pdf'});if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'Lista de precios',text:'Lista de precios de '+(b.business||'')});return}}catch(e){if(e&&e.name==='AbortError')return}saveBlob(name,blob)};
+// impreso
+catPrint=function(){const{li,G}=catData(),b=db.settings,logo=catLogo();
+ const html='<div class="catSh">'+(logo?'<img class="catWm" src="'+logo+'" alt="">':'')+'<div class="catHd">'+(logo?'<img src="'+logo+'" alt="">':'')+'<div><div class="catBn">'+esc(b.business||'Pescadería')+'</div><div>Lista de precios · '+esc(fmtDate(today()))+(b.priceLists.length>1?' · '+esc(b.priceLists[li]):'')+'</div>'+(b.phone?'<div><b>Pedidos: '+esc(b.phone)+'</b></div>':'')+'</div></div>'+
+ Object.entries(G).map(([c,L])=>'<div class="catCt">'+esc(c)+'</div><table class="catTb">'+L.map(x=>'<tr><td><b>'+esc(x.p.name)+'</b></td><td class="pr">'+(x.offer!=null?'<span class="of">OFERTA</span> <s>'+money(x.base)+'</s> '+money(x.offer):money(x.base))+' / '+esc(x.p.unit)+'</td></tr>'+x.boxes.map(r=>'<tr class="bx"><td>📦 '+esc(r.n)+' ('+qn(r.q)+' '+esc(x.p.unit)+')</td><td class="pr">'+money(r.price)+'</td></tr>').join('')).join('')+'</table>').join('')+'<p class="catFt">Precios sujetos a cambio sin previo aviso.'+(b.phone?' Pedidos al '+esc(b.phone)+'.':'')+'</p></div>';
+ const _pl=prtLogo,_rp=(typeof rollPaper==='function')?rollPaper:null;prtLogo=()=>'';if(_rp)rollPaper=()=>0;try{printHtml(html)}finally{prtLogo=_pl;if(_rp)rollPaper=_rp}};
+// en pantalla
+{const _cp=catPaint;catPaint=function(){const r=_cp.apply(this,arguments);try{const e=document.getElementById('catPrev'),l=catLogo();if(e){e.classList.add('catWmBox');e.style.setProperty('--catwm',l?'url("'+l+'")':'none')}}catch(x){}return r}}
+{const st=document.createElement('style');st.textContent=`
+.catWmBox{position:relative;isolation:isolate}.catWmBox::before{content:"";position:absolute;inset:0;background:var(--catwm) center 40%/min(80%,520px) auto no-repeat;opacity:.07;z-index:-1;pointer-events:none}
+body.prp #prtSheet .catSh{position:relative;font-family:Helvetica,Arial,sans-serif;color:#14232c}
+body.prp #prtSheet .catWm{position:fixed;left:50%;top:52%;transform:translate(-50%,-50%);width:82%;max-height:62%;object-fit:contain;opacity:.075;z-index:0;pointer-events:none}
+body.prp #prtSheet .catHd{position:relative;z-index:1;display:flex;gap:14px;align-items:center;background:#0c4a6e;color:#fff;border-radius:10px;padding:10px 14px;border-bottom:4px solid #0ea5e9;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body.prp #prtSheet .catHd img{width:60px;height:60px;object-fit:contain;background:#fff;border-radius:8px;padding:3px}
+body.prp #prtSheet .catBn{font-size:22px;font-weight:800}
+body.prp #prtSheet .catCt{position:relative;z-index:1;margin:14px 0 4px;padding:5px 10px;background:#e0f2fe;color:#0c4a6e;font-weight:800;border-radius:6px;text-transform:uppercase;letter-spacing:.04em;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body.prp #prtSheet .catTb{position:relative;z-index:1;width:100%;border-collapse:collapse;background:transparent}
+body.prp #prtSheet .catTb td{padding:5px 10px;border:0;border-bottom:1px solid #dbe4ea;background:transparent;color:#14232c}
+body.prp #prtSheet .catTb td.pr{text-align:right!important;font-weight:800;color:#0c4a6e;white-space:nowrap}
+body.prp #prtSheet .catTb tr.bx td{font-size:12px;color:#46555f;padding-top:2px}
+body.prp #prtSheet .catTb .of{background:#b91c1c;color:#fff;border-radius:4px;padding:1px 5px;font-size:10px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body.prp #prtSheet .catTb s{color:#888;font-weight:400}
+body.prp #prtSheet .catFt{position:relative;z-index:1;margin-top:14px;font-size:11px;color:#6b7780}
+`;document.head.appendChild(st)}
+
 (async()=>{await bootStore();syncLoadMeta();await load();gate();if(document.readyState==='complete')syncStart();else window.addEventListener('load',()=>syncStart());setTimeout(lowCheck,3500);setTimeout(backupCheck,9000);setInterval(backupCheck,900000);setTimeout(cobroCheck,6500);setTimeout(fixedRun,4000);setInterval(fixedRun,3600000);setTimeout(resumenCheck,12000);setInterval(resumenCheck,900000);try{themeTick();setInterval(themeTick,60000)}catch(e){}setTimeout(fxApply,3000);setInterval(fxApply,10800000);setTimeout(expCheck,8500);setInterval(expCheck,900000);setTimeout(badgeCobro,2500);setInterval(badgeCobro,300000);setInterval(cobroCheck,900000);setTimeout(cbkRun,25000);setInterval(cbkRun,1800000)})();
 </script></body></html>
