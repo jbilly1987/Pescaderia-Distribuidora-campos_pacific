@@ -1640,7 +1640,7 @@ async function tnAutoSync(){try{localStorage.removeItem('pesc_autosync')}catch(e
 window.addEventListener('load',()=>setTimeout(async()=>{try{if(!localStorage.getItem('pesc_autosync')||!window.firebase||typeof LIC_ON==='undefined'||!LIC_ON||!licLoad())return;fbReady();const u=await new Promise(r=>{const off=firebase.auth().onAuthStateChanged(x=>{off();r(x)})});if(u)await tnAutoSync();else localStorage.removeItem('pesc_autosync')}catch(e){}},2500));
 
 /* ===== fix45: aviso y aplicacion de actualizaciones (todos los clientes) ===== */
-const BUILD='20261128-0643';
+const BUILD='20261128-0649';
 function updBanner(v){if(document.getElementById('updBar'))return;const d=document.createElement('div');d.id='updBar';d.setAttribute('role','alert');
  d.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:99999;max-width:460px;margin:0 auto;background:#0f6e8c;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 8px 28px rgba(0,0,0,.35);font:600 14px/1.35 system-ui,sans-serif;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
  d.innerHTML='<span style="flex:1;min-width:180px">🔄 Hay una versión nueva del sistema.<br><small style="font-weight:400;opacity:.9">Si tiene una venta a medias, termínela y luego actualice.</small></span><button id="updGo" style="background:#f5c20c;color:#14232d;border:0;border-radius:9px;padding:9px 14px;font:700 14px system-ui,sans-serif">Actualizar ahora</button><button id="updLater" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:9px;padding:9px 12px;font:600 13px system-ui,sans-serif">Después</button>';
@@ -4682,7 +4682,7 @@ function rfMove(){try{document.querySelectorAll('.poslayout>.rfBox').forEach(b=>
 {const st=document.createElement('style');st.textContent=`@media(max-width:760px){body.cartopen .poslayout>.poscart{z-index:9200!important;padding-top:env(safe-area-inset-top,0px)!important}
  body.cartopen .posclose{display:flex!important;align-items:center;gap:8px;font-size:17px!important;font-weight:800;padding:16px!important;background:var(--paper,#14252e)!important;border:0!important;border-bottom:2px solid var(--line,#2a4352)!important;box-shadow:0 6px 14px -8px #0008;color:inherit}}`;document.head.appendChild(st)}
 const OVB={prev:0,ign:0};
-function ovDepth(){let d=0;const b=document.body;if(b.classList.contains('cartopen'))d++;if(b.classList.contains('navopen'))d++;const g=document.getElementById('dlg');if(g&&g.classList.contains('on'))d++;if(document.getElementById('mxPn'))d++;['phOv','wpOv','dwOv','ncOv'].forEach(i=>{if(document.getElementById(i))d++});return d}
+function ovDepth(){let d=0;const b=document.body;if(b.classList.contains('cartopen')&&!b.classList.contains('cartclosing'))d++;if(b.classList.contains('navopen'))d++;const g=document.getElementById('dlg');if(g&&g.classList.contains('on'))d++;if(document.getElementById('mxPn'))d++;['phOv','wpOv','dwOv','ncOv'].forEach(i=>{if(document.getElementById(i))d++});return d}
 function ovCloseTop(){const b=document.body;const rm=id=>{const e=document.getElementById(id);if(e){if(id==='phOv'&&typeof phClose==='function')phClose();else e.remove();return true}return false};
  if(rm('phOv')||rm('wpOv')||rm('dwOv')||rm('ncOv'))return;
  const g=document.getElementById('dlg');if(g&&g.classList.contains('on')){g.classList.remove('on');return}
@@ -4690,7 +4690,7 @@ function ovCloseTop(){const b=document.body;const rm=id=>{const e=document.getEl
  if(b.classList.contains('cartopen')){posClose();return}
  if(b.classList.contains('navopen')){navClose();return}}
 function ovSync(){const d=ovDepth();if(d>OVB.prev){for(let i=OVB.prev;i<d;i++)try{history.pushState({pescOv:1},'')}catch(e){}}else if(d<OVB.prev){const n=OVB.prev-d;OVB.ign+=n;try{history.go(-n)}catch(e){OVB.ign-=n}}OVB.prev=d}
-addEventListener('popstate',()=>{if(OVB.ign>0){OVB.ign--;return}if(OVB.prev>0){OVB.prev--;const ask=document.getElementById('ask');if(ask&&ask.classList.contains('on')){const n=document.getElementById('askNo');if(n&&n.offsetParent)n.click();else{const y=document.getElementById('askYes');if(y)y.click()}try{history.pushState({pescOv:1},'')}catch(e){}OVB.prev++;return}ovCloseTop();setTimeout(()=>{OVB.prev=ovDepth()},0)}});
+addEventListener('popstate',()=>{if(OVB.ign>0){OVB.ign--;return}if(OVB.prev>0){OVB.prev--;const ask=document.getElementById('ask');if(ask&&ask.classList.contains('on')){const n=document.getElementById('askNo');if(n&&n.offsetParent)n.click();else{const y=document.getElementById('askYes');if(y)y.click()}try{history.pushState({pescOv:1},'')}catch(e){}OVB.prev++;return}ovCloseTop();setTimeout(()=>{const d=ovDepth();if(d<OVB.prev)OVB.prev=d},0)}});
 {let t=0;new MutationObserver(()=>{clearTimeout(t);t=setTimeout(ovSync,60)}).observe(document.body,{attributes:true,attributeFilter:['class'],childList:true,subtree:true})}
 /* fix187: en tableta, Ventas como en el celular (productos a lo ancho, barra Cobrar abajo y la venta en un panel). Se puede volver a «venta al lado». */
 function pbmOn(){try{return localStorage.getItem('pesc_posmode')!=='side'}catch(e){return true}}
@@ -4748,5 +4748,19 @@ let QONE_BAD=0;
  const qr=q.getBoundingClientRect(),se=document.getElementById('qSearch'),sw=se?se.getBoundingClientRect().width:999;let right=0;[...q.children].forEach(c=>{const b=c.getBoundingClientRect();if(b.width&&b.right>right)right=b.right});
  if(right>innerWidth-4||sw<150){QONE_BAD=innerWidth;off()}}catch(e){}return r}}
 addEventListener('resize',()=>{if(innerWidth>QONE_BAD+40)QONE_BAD=0});setTimeout(qOneLine,900);
+/* fix191: el panel de la venta abre y cierra suave (como los recuadros de Inicio) */
+{const _pc=posClose;let busy=false;posClose=function(){const b=document.body;if(!b.classList.contains('cartopen')||busy||matchMedia('(prefers-reduced-motion: reduce)').matches)return _pc.apply(this,arguments);busy=true;b.classList.add('cartclosing');const self=this,args=arguments;setTimeout(()=>{b.classList.remove('cartclosing');busy=false;_pc.apply(self,args)},300)}}
+{const st=document.createElement('style');st.textContent=`
+body.cartopen .poslayout>.poscart{animation:pcUp .46s cubic-bezier(.22,1,.36,1) both!important;will-change:transform,opacity}
+@media(min-width:761px){body.pbm.cartopen .poslayout>.poscart{animation:pcSide .5s cubic-bezier(.22,1,.36,1) both!important}}
+body.cartclosing .poslayout>.poscart{animation:pcDown .3s cubic-bezier(.4,0,.8,.6) both!important}
+@media(min-width:761px){body.pbm.cartclosing .poslayout>.poscart{animation:pcSideOut .3s cubic-bezier(.4,0,.8,.6) both!important}}
+#posBack{animation:pcFade .4s ease both!important}body.cartclosing #posBack{animation:pcFadeOut .3s ease both!important}
+@keyframes pcUp{from{opacity:0;transform:translateY(48px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes pcDown{from{opacity:1;transform:none}to{opacity:0;transform:translateY(40px) scale(.98)}}
+@keyframes pcSide{from{opacity:0;transform:translateX(70px)}to{opacity:1;transform:none}}
+@keyframes pcSideOut{from{opacity:1;transform:none}to{opacity:0;transform:translateX(70px)}}
+@keyframes pcFade{from{opacity:0}to{opacity:1}}@keyframes pcFadeOut{from{opacity:1}to{opacity:0}}
+@media (prefers-reduced-motion:reduce){body.cartopen .poslayout>.poscart,#posBack{animation:none!important}}`;document.head.appendChild(st)}
 (async()=>{await bootStore();syncLoadMeta();await load();gate();if(document.readyState==='complete')syncStart();else window.addEventListener('load',()=>syncStart());setTimeout(lowCheck,3500);setTimeout(backupCheck,9000);setInterval(backupCheck,900000);setTimeout(cobroCheck,6500);setTimeout(fixedRun,4000);setInterval(fixedRun,3600000);setTimeout(resumenCheck,12000);setInterval(resumenCheck,900000);try{themeTick();setInterval(themeTick,60000)}catch(e){}setTimeout(fxApply,3000);setInterval(fxApply,10800000);setTimeout(expCheck,8500);setInterval(expCheck,900000);setTimeout(badgeCobro,2500);setInterval(badgeCobro,300000);setInterval(cobroCheck,900000);setTimeout(cbkRun,25000);setInterval(cbkRun,1800000)})();
 </script></body></html>
