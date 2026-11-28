@@ -1640,7 +1640,7 @@ async function tnAutoSync(){try{localStorage.removeItem('pesc_autosync')}catch(e
 window.addEventListener('load',()=>setTimeout(async()=>{try{if(!localStorage.getItem('pesc_autosync')||!window.firebase||typeof LIC_ON==='undefined'||!LIC_ON||!licLoad())return;fbReady();const u=await new Promise(r=>{const off=firebase.auth().onAuthStateChanged(x=>{off();r(x)})});if(u)await tnAutoSync();else localStorage.removeItem('pesc_autosync')}catch(e){}},2500));
 
 /* ===== fix45: aviso y aplicacion de actualizaciones (todos los clientes) ===== */
-const BUILD='20261128-0603';
+const BUILD='20261128-0614';
 function updBanner(v){if(document.getElementById('updBar'))return;const d=document.createElement('div');d.id='updBar';d.setAttribute('role','alert');
  d.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:99999;max-width:460px;margin:0 auto;background:#0f6e8c;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 8px 28px rgba(0,0,0,.35);font:600 14px/1.35 system-ui,sans-serif;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
  d.innerHTML='<span style="flex:1;min-width:180px">🔄 Hay una versión nueva del sistema.<br><small style="font-weight:400;opacity:.9">Si tiene una venta a medias, termínela y luego actualice.</small></span><button id="updGo" style="background:#f5c20c;color:#14232d;border:0;border-radius:9px;padding:9px 14px;font:700 14px system-ui,sans-serif">Actualizar ahora</button><button id="updLater" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:9px;padding:9px 12px;font:600 13px system-ui,sans-serif">Después</button>';
@@ -4664,14 +4664,17 @@ function bkOpen(){const lb=lastBackup(),L=bklList(),cl=typeof cbkLast==='functio
 
 function cartFit(){try{if(innerWidth<761)return;document.querySelectorAll('.poslayout>.poscart,.poslayout>#alCartCard').forEach(el=>{const r=el.getBoundingClientRect();const qh=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--qh'))||0;const top=Math.max(r.top,qh+10);const mh=Math.max(260,Math.floor(innerHeight-top-10));if(el.style.maxHeight!==mh+'px')el.style.maxHeight=mh+'px'})}catch(e){}}
 {let raf=0;const go=()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;cartFit()})};addEventListener('scroll',go,{passive:true});addEventListener('resize',go);setInterval(cartFit,1200);const _pr=postRender;postRender=function(){const r=_pr.apply(this,arguments);setTimeout(cartFit,50);return r}}
+function alFootFix(){try{const c=document.getElementById('alCartCard');if(!c)return;const t=c.querySelector(':scope>.altot');if(!t)return;let f=c.querySelector(':scope>.alFoot');const act=[...c.querySelectorAll(':scope>.actions')].pop();const note=[...c.children].find(x=>x.classList&&x.classList.contains('field')&&x.previousElementSibling===t);if(note)c.insertBefore(note,t);if(!f){f=document.createElement('div');f.className='alFoot';c.insertBefore(f,t)}f.appendChild(t);if(act)f.appendChild(act)}catch(e){}}
+function rfMove(){try{document.querySelectorAll('.poslayout>.rfBox').forEach(b=>{const L=b.parentElement;L.parentElement.insertBefore(b,L);b.style.marginBottom='14px'})}catch(e){}}
+{let raf=0;new MutationObserver(()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;if(document.querySelector('.poslayout>.rfBox'))rfMove();if(document.querySelector('#alCartCard>.altot'))alFootFix()})}).observe(document.documentElement,{childList:true,subtree:true})}
 /* fix184: la venta actual (y el carrito de traslado/devolución) queda fija al lado mientras se buscan productos; sin selección de texto al dejar el dedo */
 {const st=document.createElement('style');st.textContent=`.productbtn,.productgrid{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 @media(min-width:761px){
  .poslayout{align-items:start!important}
  .poslayout>.poscart,.poslayout>#alCartCard{position:sticky!important;top:calc(var(--qh,0px) + 10px);max-height:calc(100vh - var(--qh,0px) - 20px);max-height:calc(100dvh - var(--qh,0px) - 20px);overflow-y:auto;overscroll-behavior:contain;animation:none!important;transform:none!important}
  .poslayout>.poscart .posdock{position:sticky;bottom:0}
- .poslayout>#alCartCard .altot{position:sticky;bottom:0;z-index:3;background:var(--paper,#14252e);padding-top:8px;margin-top:4px}
- .poslayout>#alCartCard .altot+div,.poslayout>#alCartCard .altot~.actions{position:sticky;bottom:0}
+ .poslayout>#alCartCard .alFoot{position:sticky;bottom:-16px;z-index:3;background:var(--paper,#14252e);margin:6px -16px -16px;padding:8px 16px 14px;border-top:2px solid var(--line,#2a4352);box-shadow:0 -8px 14px -10px #0007}
+ .poslayout>#alCartCard .alFoot .altot{margin:0 0 8px}.poslayout>#alCartCard .alFoot .actions{margin:0}
 }`;document.head.appendChild(st)}
 (async()=>{await bootStore();syncLoadMeta();await load();gate();if(document.readyState==='complete')syncStart();else window.addEventListener('load',()=>syncStart());setTimeout(lowCheck,3500);setTimeout(backupCheck,9000);setInterval(backupCheck,900000);setTimeout(cobroCheck,6500);setTimeout(fixedRun,4000);setInterval(fixedRun,3600000);setTimeout(resumenCheck,12000);setInterval(resumenCheck,900000);try{themeTick();setInterval(themeTick,60000)}catch(e){}setTimeout(fxApply,3000);setInterval(fxApply,10800000);setTimeout(expCheck,8500);setInterval(expCheck,900000);setTimeout(badgeCobro,2500);setInterval(badgeCobro,300000);setInterval(cobroCheck,900000);setTimeout(cbkRun,25000);setInterval(cbkRun,1800000)})();
 </script></body></html>
