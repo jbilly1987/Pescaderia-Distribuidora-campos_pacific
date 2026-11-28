@@ -1640,7 +1640,7 @@ async function tnAutoSync(){try{localStorage.removeItem('pesc_autosync')}catch(e
 window.addEventListener('load',()=>setTimeout(async()=>{try{if(!localStorage.getItem('pesc_autosync')||!window.firebase||typeof LIC_ON==='undefined'||!LIC_ON||!licLoad())return;fbReady();const u=await new Promise(r=>{const off=firebase.auth().onAuthStateChanged(x=>{off();r(x)})});if(u)await tnAutoSync();else localStorage.removeItem('pesc_autosync')}catch(e){}},2500));
 
 /* ===== fix45: aviso y aplicacion de actualizaciones (todos los clientes) ===== */
-const BUILD='20261128-0632';
+const BUILD='20261128-0643';
 function updBanner(v){if(document.getElementById('updBar'))return;const d=document.createElement('div');d.id='updBar';d.setAttribute('role','alert');
  d.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:99999;max-width:460px;margin:0 auto;background:#0f6e8c;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 8px 28px rgba(0,0,0,.35);font:600 14px/1.35 system-ui,sans-serif;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
  d.innerHTML='<span style="flex:1;min-width:180px">🔄 Hay una versión nueva del sistema.<br><small style="font-weight:400;opacity:.9">Si tiene una venta a medias, termínela y luego actualice.</small></span><button id="updGo" style="background:#f5c20c;color:#14232d;border:0;border-radius:9px;padding:9px 14px;font:700 14px system-ui,sans-serif">Actualizar ahora</button><button id="updLater" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:9px;padding:9px 12px;font:600 13px system-ui,sans-serif">Después</button>';
@@ -2112,7 +2112,7 @@ let _posDisp=false;
 const cartQ=id=>cart.filter(l=>l.id===id).reduce((a,l)=>a+(+l.qty||0),0);
 {const _av=avail;avail=function(p){const v=_av(p);return _posDisp&&p&&p.id?v-cartQ(p.id):v}}
 function posCartMarks(){const g=$('#posProducts');if(!g)return;g.querySelectorAll('.cartn').forEach(x=>x.remove());const ids=[...new Set(cart.filter(l=>l.id&&!l.quick).map(l=>l.id))];
- ids.forEach(id=>{const b=g.querySelector('.productbtn[onclick*="\''+id+'\'"]');if(!b)return;const p=db.products.find(x=>x.id===id);const s=document.createElement('span');s.className='cartn';s.textContent='🛒 '+qn(r3(cartQ(id)))+(p&&p.unit?' '+p.unit:'');b.appendChild(s)})}
+ ids.forEach(id=>{const b=g.querySelector('.productbtn[onclick*="\''+id+'\'"]');if(!b)return;const p=db.products.find(x=>x.id===id);const s=document.createElement('span');s.className='cartn';s.textContent='🛒 '+qn(r3(cartQ(id)))+(p&&p.unit?' '+(p.unit==='unidad'?'und':p.unit):'');b.appendChild(s)})}
 {const _pp=posProducts;posProducts=function(){_posDisp=true;try{return _pp.apply(this,arguments)}finally{_posDisp=false}}}
 {const _dp=decoPos;decoPos=function(){const was=_posDisp;_posDisp=true;try{return _dp.apply(this,arguments)}finally{_posDisp=was;try{posCartMarks()}catch(e){}}}}
 {const _fp=filterPos;filterPos=function(){_posDisp=true;try{return _fp.apply(this,arguments)}finally{_posDisp=false;try{posCartMarks()}catch(e){}}}}
@@ -4390,7 +4390,9 @@ function almSync(){try{if(!db.settings.almShared||ALM.busy)return;const sig=()=>
 /* fix166: recuadros de productos: el dibujo ocupa lo mismo que el emoji y el texto no se sale */
 {const st=document.createElement('style');st.textContent=`.productbtn{grid-template-columns:auto minmax(0,1fr)!important}
 .productbtn>.pe{grid-row:1/span 8!important;grid-column:1!important;align-self:center}
-.productbtn>:not(.pe):not(.cartn){grid-column:2;min-width:0;overflow-wrap:anywhere;word-break:normal}
+.productbtn>:not(.pe):not(.cartn){grid-column:2;min-width:0;overflow-wrap:break-word;word-break:normal;hyphens:manual}
+.productbtn .cartn{top:6px!important;left:6px!important;right:auto!important;font-size:11px!important;padding:2px 7px!important;z-index:2}
+@media(min-width:761px){.productgrid{grid-template-columns:repeat(auto-fill,minmax(185px,1fr))!important}}
 .productbtn>.pe.phOn{width:46px!important;height:46px!important}
 @media(max-width:620px){.productbtn>.pe.phOn{width:42px!important;height:42px!important}}`;document.head.appendChild(st)}
 /* fix167: barra de arriba fija con efecto de vidrio y agua (la franja de fondo cubre todos los botones) */
@@ -4738,5 +4740,13 @@ body.cartopen .poscart.pcFlex{height:100%!important}
 .poscart details.pcOpt[open]>summary b{visibility:hidden}
 .poscart details.pcOpt .pcBody{padding-bottom:8px}
 .poscart .posdock .pcRow{display:flex;gap:8px;margin-top:8px}.poscart .posdock .pcRow>button{flex:1;margin:0!important;padding:10px 8px;font-size:14px}`;document.head.appendChild(st)}
+/* fix190: la barra de arriba usa un renglón solo si cabe; si no, dos renglones (evita botones cortados en tableta vertical) */
+let QONE_BAD=0;
+{const _q=qOneLine;qOneLine=function(){if(QONE_BAD&&innerWidth<=QONE_BAD){try{if(document.body.classList.contains('qone'))document.body.classList.remove('qone');const q0=document.getElementById('qTools');if(q0&&q0.style.left)q0.style.left='';lhBeamPlace()}catch(e){}return}const r=_q.apply(this,arguments);try{const q=document.getElementById('qTools');if(!q||!document.body.classList.contains('qone'))return r;
+ const off=()=>{document.body.classList.remove('qone');q.style.left='';try{lhBeamPlace()}catch(e){}};
+ if(QONE_BAD&&innerWidth<=QONE_BAD)return off(),r;
+ const qr=q.getBoundingClientRect(),se=document.getElementById('qSearch'),sw=se?se.getBoundingClientRect().width:999;let right=0;[...q.children].forEach(c=>{const b=c.getBoundingClientRect();if(b.width&&b.right>right)right=b.right});
+ if(right>innerWidth-4||sw<150){QONE_BAD=innerWidth;off()}}catch(e){}return r}}
+addEventListener('resize',()=>{if(innerWidth>QONE_BAD+40)QONE_BAD=0});setTimeout(qOneLine,900);
 (async()=>{await bootStore();syncLoadMeta();await load();gate();if(document.readyState==='complete')syncStart();else window.addEventListener('load',()=>syncStart());setTimeout(lowCheck,3500);setTimeout(backupCheck,9000);setInterval(backupCheck,900000);setTimeout(cobroCheck,6500);setTimeout(fixedRun,4000);setInterval(fixedRun,3600000);setTimeout(resumenCheck,12000);setInterval(resumenCheck,900000);try{themeTick();setInterval(themeTick,60000)}catch(e){}setTimeout(fxApply,3000);setInterval(fxApply,10800000);setTimeout(expCheck,8500);setInterval(expCheck,900000);setTimeout(badgeCobro,2500);setInterval(badgeCobro,300000);setInterval(cobroCheck,900000);setTimeout(cbkRun,25000);setInterval(cbkRun,1800000)})();
 </script></body></html>
