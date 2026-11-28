@@ -1640,7 +1640,7 @@ async function tnAutoSync(){try{localStorage.removeItem('pesc_autosync')}catch(e
 window.addEventListener('load',()=>setTimeout(async()=>{try{if(!localStorage.getItem('pesc_autosync')||!window.firebase||typeof LIC_ON==='undefined'||!LIC_ON||!licLoad())return;fbReady();const u=await new Promise(r=>{const off=firebase.auth().onAuthStateChanged(x=>{off();r(x)})});if(u)await tnAutoSync();else localStorage.removeItem('pesc_autosync')}catch(e){}},2500));
 
 /* ===== fix45: aviso y aplicacion de actualizaciones (todos los clientes) ===== */
-const BUILD='20261127-0448';
+const BUILD='20261128-0144';
 function updBanner(v){if(document.getElementById('updBar'))return;const d=document.createElement('div');d.id='updBar';d.setAttribute('role','alert');
  d.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:99999;max-width:460px;margin:0 auto;background:#0f6e8c;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 8px 28px rgba(0,0,0,.35);font:600 14px/1.35 system-ui,sans-serif;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
  d.innerHTML='<span style="flex:1;min-width:180px">🔄 Hay una versión nueva del sistema.<br><small style="font-weight:400;opacity:.9">Si tiene una venta a medias, termínela y luego actualice.</small></span><button id="updGo" style="background:#f5c20c;color:#14232d;border:0;border-radius:9px;padding:9px 14px;font:700 14px system-ui,sans-serif">Actualizar ahora</button><button id="updLater" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:9px;padding:9px 12px;font:600 13px system-ui,sans-serif">Después</button>';
@@ -3943,5 +3943,159 @@ function dvCard(){const R=dvRows(),cl=R.filter(r=>r.k!=='🏬'),pe=R.filter(r=>r
 {const _ds=dash;dash=function(){let h=_ds.apply(this,arguments);try{const c=dvCard(),k='<div class="card panel"><h2>Actividad reciente</h2>';h=h.includes(k)?h.replace(k,c+k):h+c}catch(e){console.warn(e)}return h}}
 try{CZ_TITLES.push('Devoluciones')}catch(e){}
 {const st=document.createElement('style');st.textContent='.dvK{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin:8px 0}.dvK>div{border:1px solid var(--line);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:2px}.dvK b{font-size:22px}.dvK span{font-size:12px;opacity:.85}.dvK .w{color:#d97706;opacity:1;font-weight:700}.dvL{display:flex;flex-direction:column;gap:6px}.dvR{display:flex;gap:10px;border:1px solid var(--line);border-radius:12px;padding:8px 10px}.dvR.go{cursor:pointer}.dvR .ic{font-size:20px}.dvR .b{flex:1;min-width:0}.dvR .t{display:flex;justify-content:space-between;gap:8px}.dvR .t span{font-weight:800;white-space:nowrap}.dvR .d{font-size:12.5px;opacity:.8;overflow-wrap:anywhere}';document.head.appendChild(st)}
+/* fix153: fotos de productos (sin fondo, con sombra), livianas, guardadas aparte y sincronizadas */
+const PH={mem:{},busy:{},fail:{},pend:null,lib:null,ed:null,obs:null};
+const PH_LIB='https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/+esm';
+function phQ(){try{return JSON.parse(localStorage.getItem('pesc_phq')||'[]')}catch(e){return[]}}
+function phQset(L){try{localStorage.setItem('pesc_phq',JSON.stringify([...new Set(L)]))}catch(e){}}
+function phCloud(){try{return typeof chatReady==='function'&&chatReady()}catch(e){return false}}
+/* foto lista para mostrar (o null mientras se baja / si no tiene) */
+function phUrl(p){if(!p||!p.ph)return null;const m=PH.mem[p.id];if(m&&m.v>=p.ph)return m;phLoad(p);return m||null}
+async function phLoad(p){const id=p.id;if(PH.busy[id]||(PH.fail[id]&&Date.now()-PH.fail[id]<60000))return;PH.busy[id]=1;
+ try{let x=STORE.idb?await idbGet('ph_'+id):null;
+  if(!(x&&x.v>=p.ph)&&phCloud()){const s=await chatCol('photos').doc(id).get();if(s.exists){const d=s.data();if(d&&d.d){x={v:+d.v||0,d:d.d,t:d.t?1:0};if(STORE.idb)idbPut('ph_'+id,x)}}}
+  if(x&&x.d){PH.mem[id]=x;delete PH.fail[id];phPaint()}else PH.fail[id]=Date.now()}
+ catch(e){PH.fail[id]=Date.now()}finally{delete PH.busy[id]}}
+async function phUpload(id){const x=PH.mem[id]||(STORE.idb?await idbGet('ph_'+id):null);if(!phCloud())return false;
+ try{const ref=chatCol('photos').doc(id);if(!x||!x.d||x.del)await ref.delete();else await ref.set({v:x.v,d:x.d,t:x.t?1:0,at:Date.now(),by:(me&&me.name)||''});phQset(phQ().filter(k=>k!==id));return true}catch(e){return false}}
+function phFlush(){if(!phCloud())return;phQ().forEach(id=>phUpload(id))}
+setInterval(phFlush,30000);
+/* guardar la foto en el producto */
+async function phApply(id,data,t){const p=db.products.find(x=>x.id===id);if(!p)return;
+ if(data){const had=!!p.ph,v=Date.now(),x={v,d:data,t:t?1:0};PH.mem[id]=x;if(STORE.idb)await idbPut('ph_'+id,x);p.ph=v;p.phT=t?1:0;logA((had?'Cambió':'Puso')+' la foto de '+p.name,t?'Foto sin fondo':'Foto con fondo')}
+ else{delete PH.mem[id];if(STORE.idb)await idbPut('ph_'+id,{v:Date.now(),del:1});delete p.ph;delete p.phT;logA('Quitó la foto de '+p.name,'Vuelve a mostrar el emoji')}
+ save();phQset([...phQ(),id]);phUpload(id);phPaint()}
+/* ----- dibujar fotos donde hoy está el emoji ----- */
+function phImg(m,cls){return '<img class="'+cls+'" src="'+m.d+'" alt="" draggable="false">'}
+function phPaint(){try{const v=document.getElementById('view');if(!v)return;
+ v.querySelectorAll('.productbtn .pe').forEach(e=>{const b=e.closest('.productbtn'),r=/(?:addCart|almTap)\('([^']+)'\)/.exec(b.getAttribute('onclick')||''),p=r&&db.products.find(x=>x.id===r[1]);
+  const m=p&&phUrl(p),key=m?String(m.v):'';if((e.dataset.phv||'')===key)return;
+  if(!e.dataset.emo)e.dataset.emo=e.textContent;e.dataset.phv=key;
+  if(m){e.innerHTML=phImg(m,'phI');e.classList.add('phOn');e.classList.toggle('phT',!!m.t);e.classList.toggle('phB',!m.t)}
+  else{e.textContent=e.dataset.emo;e.classList.remove('phOn','phT','phB')}});
+ v.querySelectorAll('tr').forEach(tr=>{const bt=tr.querySelector('button[onclick*="editProduct(\'"]');if(!bt)return;const r=/editProduct\('([^']+)'\)/.exec(bt.getAttribute('onclick')),p=r&&db.products.find(x=>x.id===r[1]);if(!p)return;
+  const td=tr.querySelector('td');if(!td)return;const m=phUrl(p),key=m?String(m.v):'';if((td.dataset.phv||'')===key)return;
+  const old=td.querySelector('.phThW');if(old){old.remove();if(td.dataset.emo)td.insertAdjacentText('afterbegin',td.dataset.emo)}
+  td.dataset.phv=key;if(!m)return;const e=emo(p),w=document.createTreeWalker(td,NodeFilter.SHOW_TEXT);let n;while((n=w.nextNode())){const i=n.nodeValue.indexOf(e);if(i>=0&&!n.nodeValue.slice(0,i).trim()){n.nodeValue=n.nodeValue.slice(i+e.length);td.dataset.emo=e;n.parentNode.insertBefore(Object.assign(document.createElement('span'),{className:'phThW'+(m.t?' phT':' phB'),innerHTML:phImg(m,'phTh')}),n);break}}});
+ phFieldPaint()}catch(e){}}
+{let raf=0;const sch=()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;phPaint()})};
+ const start=()=>{const v=document.getElementById('view');if(!v||PH.obs)return;PH.obs=new MutationObserver(sch);PH.obs.observe(v,{childList:true,subtree:true})};
+ const _pr=postRender;postRender=function(){const r=_pr.apply(this,arguments);try{start();phFieldInject();phPaint()}catch(e){}return r}}
+/* ----- campo de foto en el formulario del producto ----- */
+function phFormId(){const f=document.getElementById('prodForm');return f&&f.elements.id?f.elements.id.value:''}
+function phFieldInject(){const f=document.getElementById('prodForm');if(!f||document.getElementById('phF'))return;
+ f.insertAdjacentHTML('afterbegin','<div class="field" id="phF" style="grid-column:1/-1"><label>📷 Foto del producto <small class="sub">(opcional · si no tiene, se ve su emoji)</small></label><div class="phRow"><div id="phPv" class="phPv"></div><div class="phBt"><label class="phUp secondary">📷 Tomar o subir foto<input id="phFile" type="file" accept="image/*" hidden onchange="phPick(this)"></label><button type="button" class="secondary" id="phEdB" onclick="phEditCur()">✏️ Recortar o borrar</button><button type="button" class="secondary" id="phDelB" onclick="phDelCur()">🗑️ Quitar foto</button><small id="phMsg" class="sub"></small></div></div></div>');
+ phFieldPaint()}
+function phCurProd(){const id=phFormId();return id?db.products.find(x=>x.id===id):null}
+function phFieldPaint(){const pv=document.getElementById('phPv');if(!pv)return;const p=phCurProd(),P=PH.pend&&PH.pend.form===phFormId()?PH.pend:null;
+ let m=null,note='';if(P){if(P.del){note='🗑️ La foto se quita al tocar «Guardar producto».'}else{m={d:P.d,t:P.t};note='🕓 Foto nueva lista. Se guarda al tocar «Guardar producto».'}}else if(p)m=phUrl(p);
+ const nm=(document.getElementById('prodForm')||{}).elements;const fake={name:nm&&nm.name?nm.name.value:'',category:nm&&nm.category?nm.category.value:''};
+ const key=(m?String(m.d.length)+m.d.slice(-24):'e'+emo(p||fake))+(P?'p':'');if(pv.dataset.k!==key){pv.dataset.k=key;pv.className='phPv pe'+(m?' phOn '+(m.t?'phT':'phB'):'');pv.innerHTML=m?phImg(m,'phI'):'<span>'+emo(p||fake)+'</span>'}
+ const has=!!m;document.getElementById('phEdB').hidden=!has;document.getElementById('phDelB').hidden=!has;const g=document.getElementById('phMsg');if(g)g.textContent=note}
+function phDelCur(){PH.pend={form:phFormId(),del:1,ids:db.products.map(x=>x.id),name:''};phFieldPaint()}
+async function phEditCur(){const P=PH.pend&&PH.pend.form===phFormId()&&!PH.pend.del?PH.pend:null,p=phCurProd(),m=P||(p&&phUrl(p));if(!m)return;const img=await phLoadImg(m.d);phEditor(img,{already:true})}
+function phPick(inp){const f=inp.files&&inp.files[0];inp.value='';if(!f)return;if(!/^image\//.test(f.type||'image/'))return notify('Ese archivo no es una foto.');
+ const u=URL.createObjectURL(f);phLoadImg(u).then(img=>{phEditor(img,{});setTimeout(()=>URL.revokeObjectURL(u),4000)}).catch(()=>notify('No se pudo abrir esa foto. Pruebe con otra.'))}
+function phLoadImg(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src})}
+/* nuevo producto: la foto se pega cuando el producto ya existe */
+document.addEventListener('submit',e=>{const f=e.target;if(f&&f.getAttribute&&f.getAttribute('id')==='prodForm'&&PH.pend&&PH.pend.form===((f.elements.id||{}).value||'')){PH.pend.sub=Date.now();PH.pend.name=((f.elements.name||{}).value||'').trim()}},true);
+{const _sv=save;save=function(){const r=_sv.apply(this,arguments);const P=PH.pend;if(P&&P.sub&&Date.now()-P.sub<5*60000&&!P.done)setTimeout(()=>{if(PH.pend!==P||P.done)return;
+  let p=P.form?db.products.find(x=>x.id===P.form):db.products.find(x=>!P.ids.includes(x.id)&&x.name.trim()===P.name);if(!p)return;
+  const f=document.getElementById('prodForm');if(f&&document.getElementById('phF')&&phFormId()===P.form&&P.form)return; /* todavía editando */
+  P.done=1;PH.pend=null;phApply(p.id,P.del?null:P.d,P.t)},0);return r}}
+{const _sp=setPage;setPage=function(){PH.pend=null;return _sp.apply(this,arguments)}}
+{const _ep=editProduct;editProduct=async function(){PH.pend=null;const r=await _ep.apply(this,arguments);try{phFieldInject();const pv=document.getElementById('phPv');if(pv)pv.dataset.k='';phFieldPaint()}catch(e){}return r}}
+{const _rp=resetProductForm;resetProductForm=function(){PH.pend=null;const r=_rp.apply(this,arguments);const pv=document.getElementById('phPv');if(pv)pv.dataset.k='';phFieldPaint();return r}}
+{const _pc=prodCancel;prodCancel=function(){PH.pend=null;return _pc.apply(this,arguments)}}
+document.addEventListener('input',e=>{if(e.target&&e.target.closest&&e.target.closest('#prodForm')&&/^(name|category)$/.test(e.target.name||''))phFieldPaint()});
+/* ----- procesamiento de la imagen ----- */
+function phCanvas(img,max){const s=Math.min(1,max/Math.max(img.naturalWidth||img.width,img.naturalHeight||img.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round((img.naturalWidth||img.width)*s));c.height=Math.max(1,Math.round((img.naturalHeight||img.height)*s));c.getContext('2d').drawImage(img,0,0,c.width,c.height);return c}
+function phAlphaFrac(c){const t=document.createElement('canvas');t.width=t.height=64;const x=t.getContext('2d');x.drawImage(c,0,0,64,64);const d=x.getImageData(0,0,64,64).data;let n=0,o=0;for(let i=3;i<d.length;i+=4){if(d[i]<235)n++;if(d[i]>40)o++}return{clear:n/4096,solid:o/4096}}
+function phBox(c){const w=c.width,h=c.height,d=c.getContext('2d').getImageData(0,0,w,h).data;let x0=w,y0=h,x1=-1,y1=-1;for(let y=0;y<h;y+=2)for(let x=0;x<w;x+=2)if(d[(y*w+x)*4+3]>20){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}return x1<0?null:{x:x0,y:y0,w:x1-x0+2,h:y1-y0+2}}
+function phOut(src,fr,size,transp){const c=document.createElement('canvas');c.width=c.height=size;const x=c.getContext('2d');x.imageSmoothingQuality='high';if(!transp){x.fillStyle='#fff';x.fillRect(0,0,size,size)}const k=size/fr.s;x.drawImage(src,-fr.x*k,-fr.y*k,src.width*k,src.height*k);return c}
+function phEncode(c,transp){const tries=transp?[['image/webp',.86],['image/webp',.75],['image/png']]:[['image/webp',.82],['image/jpeg',.82],['image/jpeg',.7]];let best=null;
+ for(const [t,q] of tries){let u='';try{u=c.toDataURL(t,q)}catch(e){}if(!u.startsWith('data:'+t))continue;if(!best||u.length<best.length)best=u;if(u.length<140000)break}
+ if(best&&best.length>200000&&c.width>320){const s=document.createElement('canvas');s.width=s.height=Math.round(c.width*.72);s.getContext('2d').drawImage(c,0,0,s.width,s.height);return phEncode(s,transp)}return best}
+async function phRemoveBg(canvas,onp){if(!PH.lib)PH.lib=import(PH_LIB).catch(e=>{PH.lib=null;throw e});const lib=await PH.lib,fn=lib.removeBackground||(lib.default&&lib.default.removeBackground)||lib.default;
+ const blob=await new Promise(r=>canvas.toBlob(r,'image/png'));const cfg={output:{format:'image/png'},progress:(k,a,b)=>{try{onp&&onp(k,a,b)}catch(e){}}};
+ let out;try{out=await fn(blob,{...cfg,model:'isnet_quint8'})}catch(e){out=await fn(blob,cfg)}
+ try{localStorage.setItem('pesc_bgok','1')}catch(e){}const img=await phLoadImg(URL.createObjectURL(out));const c=document.createElement('canvas');c.width=canvas.width;c.height=canvas.height;c.getContext('2d').drawImage(img,0,0,c.width,c.height);return c}
+/* ----- editor: vista previa, quitar fondo, recortar y borrar ----- */
+function phFrameAuto(c,transp){if(transp){const b=phBox(c);if(b){const s=Math.max(b.w,b.h)*1.12;return{x:b.x+b.w/2-s/2,y:b.y+b.h/2-s/2,s}}}const s=Math.min(c.width,c.height);return{x:(c.width-s)/2,y:(c.height-s)/2,s}}
+function phEditor(img,o){const W=phCanvas(img,1024),O=phCanvas(img,1024);const a=phAlphaFrac(W),transp=a.clear>.03;
+ const E=PH.ed={W,O,transp,fr:phFrameAuto(W,transp),mode:'move',brush:22,undo:[],busy:false};
+ const ov=document.createElement('div');ov.id='phOv';ov.innerHTML='<div class="phBox"><h3>📷 Foto del producto</h3><div class="phMain"><div class="phCw"><canvas id="phC" width="600" height="600"></canvas></div><div class="phSide"><div class="sub" style="font-weight:700">Así se verá:</div><div class="productbtn phDemo"><span class="pe" id="phDemoE"></span><strong>'+esc(phNm())+'</strong><small>₡ precio</small></div><p id="phSt" class="phSt"></p><div id="phAskBg"></div></div></div>'+
+ '<div class="phTools"><button type="button" class="secondary on" id="phMv" onclick="phMode(\'move\')">✋ Mover</button><button type="button" class="secondary" id="phEr" onclick="phMode(\'erase\')">🧽 Borrar</button><button type="button" class="secondary" onclick="phUndo()">↶ Deshacer</button><button type="button" class="secondary" id="phBgB" onclick="phBgRun()">✨ Quitar fondo</button><button type="button" class="secondary" onclick="phOrig()">🖼️ Volver a la original</button></div>'+
+ '<div class="phSl"><label>🔍 Tamaño <input type="range" id="phZ" min="0" max="100" value="50" oninput="phZoom(this.value)"></label><label id="phBrL" hidden>🧽 Grosor <input type="range" min="6" max="70" value="22" oninput="PH.ed.brush=+this.value"></label></div>'+
+ '<div class="actions" style="justify-content:flex-end"><button type="button" class="secondary" onclick="phClose()">✖ Cancelar</button><button type="button" id="phOk" onclick="phUse()">✅ Usar esta foto</button></div></div>';
+ document.body.appendChild(ov);E.z0=E.fr.s;phBindCanvas();phDraw();
+ if(transp)phStatus(o.already?'Mueva o borre lo que quiera y toque «Usar esta foto».':'✅ La foto ya viene sin fondo. Mueva o agrande si quiere.');
+ else{let ok=false;try{ok=localStorage.getItem('pesc_bgok')==='1'}catch(e){}
+  if(ok)phBgRun();else{phStatus('Esta foto trae fondo.');document.getElementById('phAskBg').innerHTML='<div class="phAsk"><b>¿Le quito el fondo?</b><small>La primera vez en este aparato baja un programa de unos 40 MB (mejor con wifi). Después queda guardado y es más rápido.</small><div class="actions"><button type="button" onclick="phBgRun()">✨ Sí, quitar fondo</button><button type="button" class="secondary" onclick="this.closest(\'.phAsk\').remove();phStatus(\'Se usará con fondo, en un recuadro redondeado.\')">Dejarla con fondo</button></div></div>'}}}
+function phNm(){const f=document.getElementById('prodForm');return (f&&f.elements.name&&f.elements.name.value.trim())||'Producto'}
+function phStatus(t){const e=document.getElementById('phSt');if(e)e.textContent=t}
+function phClose(){const o=document.getElementById('phOv');if(o)o.remove();PH.ed=null}
+function phCur(){const E=PH.ed;return phAlphaFrac(E.W).clear>.03}
+function phDraw(){const E=PH.ed;if(!E)return;const c=document.getElementById('phC');if(!c)return;const x=c.getContext('2d'),S=c.width;x.clearRect(0,0,S,S);const t=phCur();if(!t){x.fillStyle='#fff';x.fillRect(0,0,S,S)}const k=S/E.fr.s;x.drawImage(E.W,-E.fr.x*k,-E.fr.y*k,E.W.width*k,E.W.height*k);
+ clearTimeout(E.dt);E.dt=setTimeout(()=>{const d=document.getElementById('phDemoE');if(!d||!PH.ed)return;const oc=phOut(E.W,E.fr,128,t);d.className='pe phOn '+(t?'phT':'phB');d.innerHTML='<img class="phI" src="'+oc.toDataURL('image/png')+'">'},120)}
+function phMode(m){const E=PH.ed;E.mode=m;document.getElementById('phMv').classList.toggle('on',m==='move');document.getElementById('phEr').classList.toggle('on',m==='erase');document.getElementById('phBrL').hidden=m!=='erase';document.getElementById('phC').style.cursor=m==='erase'?'crosshair':'grab'}
+function phZoom(v){const E=PH.ed,cx=E.fr.x+E.fr.s/2,cy=E.fr.y+E.fr.s/2,s=E.z0*Math.pow(2,(50-v)/25);E.fr={x:cx-s/2,y:cy-s/2,s};phDraw()}
+function phPush(){const E=PH.ed;E.undo.push({img:E.W.getContext('2d').getImageData(0,0,E.W.width,E.W.height),fr:{...E.fr}});if(E.undo.length>12)E.undo.shift()}
+function phUndo(){const E=PH.ed,u=E.undo.pop();if(!u)return phStatus('No hay nada que deshacer.');if(u.img.width!==E.W.width){E.W.width=u.img.width;E.W.height=u.img.height}E.W.getContext('2d').putImageData(u.img,0,0);E.fr=u.fr;phDraw()}
+function phOrig(){const E=PH.ed;phPush();E.W.getContext('2d').clearRect(0,0,E.W.width,E.W.height);E.W.getContext('2d').drawImage(E.O,0,0);E.fr=phFrameAuto(E.W,false);E.z0=E.fr.s;document.getElementById('phZ').value=50;phDraw();phStatus('Volvió a la foto original, con fondo.')}
+function phBindCanvas(){const c=document.getElementById('phC'),E=PH.ed;let drag=null;const pt=e=>{const r=c.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width,y:(e.clientY-r.top)/r.height}};
+ const erase=(p)=>{const x=E.W.getContext('2d'),ix=E.fr.x+p.x*E.fr.s,iy=E.fr.y+p.y*E.fr.s,r=E.brush/600*E.fr.s;x.save();x.globalCompositeOperation='destination-out';x.beginPath();if(drag&&drag.last){x.lineWidth=r*2;x.lineCap='round';x.moveTo(drag.last.x,drag.last.y);x.lineTo(ix,iy);x.stroke()}x.arc(ix,iy,r,0,Math.PI*2);x.fill();x.restore();drag.last={x:ix,y:iy};phDraw()};
+ c.addEventListener('pointerdown',e=>{if(E.busy)return;e.preventDefault();c.setPointerCapture(e.pointerId);const p=pt(e);drag={p,fr:{...E.fr},last:null};phPush();if(E.mode==='erase')erase(p)});
+ c.addEventListener('pointermove',e=>{if(!drag)return;const p=pt(e);if(E.mode==='erase')return erase(p);E.fr={...drag.fr,x:drag.fr.x-(p.x-drag.p.x)*drag.fr.s,y:drag.fr.y-(p.y-drag.p.y)*drag.fr.s};phDraw()});
+ const end=()=>{drag=null};c.addEventListener('pointerup',end);c.addEventListener('pointercancel',end);
+ c.addEventListener('wheel',e=>{e.preventDefault();const z=document.getElementById('phZ');z.value=Math.max(0,Math.min(100,+z.value-Math.sign(e.deltaY)*4));phZoom(z.value)},{passive:false})}
+async function phBgRun(){const E=PH.ed;if(!E||E.busy)return;const a=document.getElementById('phAskBg');if(a)a.innerHTML='';E.busy=true;document.getElementById('phOv').classList.add('busy');
+ let first=true;try{first=localStorage.getItem('pesc_bgok')!=='1'}catch(e){}phStatus(first?'⏳ Bajando el programa para quitar fondos (solo la primera vez)…':'⏳ Quitando el fondo…');
+ try{const src=document.createElement('canvas');src.width=E.O.width;src.height=E.O.height;src.getContext('2d').drawImage(E.O,0,0);
+  const out=await phRemoveBg(src,(k,x,t)=>{if(t>0&&/fetch/i.test(k))phStatus('⏳ Bajando el programa… '+Math.round(x/t*100)+'%');else if(/compute|inference/i.test(k))phStatus('⏳ Quitando el fondo…')});
+  if(!PH.ed)return;const af=phAlphaFrac(out);if(af.solid<.03){phStatus('⚠️ No encontró bien el producto en la foto. Puede borrar el fondo a mano con 🧽 o dejarla con fondo.');return}
+  phPush();const x=E.W.getContext('2d');x.clearRect(0,0,E.W.width,E.W.height);x.drawImage(out,0,0);E.fr=phFrameAuto(E.W,true);E.z0=E.fr.s;document.getElementById('phZ').value=50;phDraw();
+  phStatus('✅ Fondo quitado. Revise que se vea bien. Si quedó algún pedacito, use 🧽 Borrar. Si cortó de más, toque ↶ Deshacer.')}
+ catch(e){phStatus('⚠️ No se pudo quitar el fondo automáticamente'+(navigator.onLine===false?' (no hay internet)':'')+'. Puede borrarlo a mano con 🧽 o usarla con fondo.')}
+ finally{if(PH.ed)PH.ed.busy=false;const o=document.getElementById('phOv');if(o)o.classList.remove('busy')}}
+function phUse(){const E=PH.ed;if(!E||E.busy)return;const t=phCur(),oc=phOut(E.W,E.fr,512,t),d=phEncode(oc,t);if(!d)return notify('No se pudo preparar la foto.');
+ PH.pend={form:phFormId(),d,t:t?1:0,ids:db.products.map(x=>x.id),name:''};phClose();const pv=document.getElementById('phPv');if(pv)pv.dataset.k='';phFieldPaint();notify('📷 Foto lista ('+Math.round(d.length*.75/1024)+' KB). Toque «Guardar producto» para que quede.')}
+{const st=document.createElement('style');st.textContent=`
+.pe.phOn{width:60px;height:60px;font-size:0!important;display:flex;align-items:center;justify-content:center;position:relative}
+.pe.phOn img.phI{max-width:100%;max-height:100%;object-fit:contain;position:relative;z-index:1;-webkit-user-drag:none;user-select:none}
+.pe.phT img.phI{filter:drop-shadow(0 6px 5px rgba(8,30,40,.30)) drop-shadow(0 1px 1.5px rgba(8,30,40,.22))}
+.pe.phT::after{content:'';position:absolute;left:14%;right:14%;bottom:-2px;height:9px;border-radius:50%;background:radial-gradient(ellipse at center,rgba(8,30,40,.32),rgba(8,30,40,0) 70%);z-index:0}
+.pe.phB img.phI{width:100%;height:100%;object-fit:cover;border-radius:13px;box-shadow:0 4px 10px rgba(8,30,40,.25)}
+.productbtn:hover .pe.phOn{transform:scale(1.06)}
+body.dark .pe.phT::after{background:radial-gradient(ellipse at center,rgba(0,0,0,.6),rgba(0,0,0,0) 70%)}
+.phThW{display:inline-flex;width:34px;height:34px;vertical-align:middle;margin-right:6px;align-items:center;justify-content:center}
+.phThW img{max-width:100%;max-height:100%;object-fit:contain}.phThW.phT img{filter:drop-shadow(0 3px 2px rgba(8,30,40,.3))}.phThW.phB img{width:100%;height:100%;object-fit:cover;border-radius:8px}
+#phF .phRow{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+#phF .phPv{width:86px;height:86px;border:1.5px dashed #b7cdd4;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:44px;background:#f7fbfc}
+#phF .phPv.phOn{width:86px;height:86px;padding:8px;box-sizing:border-box}
+#phF .phBt{display:flex;gap:8px;flex-wrap:wrap;align-items:center;flex:1;min-width:0}
+#phF .phBt small{flex-basis:100%}
+.phUp{display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:9px 14px;border-radius:12px;border:1.5px solid #c9dbe0;background:#fff;font-weight:700}
+body.dark #phF .phPv{background:#0f1a20;border-color:#2c4450}body.dark .phUp{background:#13212a;border-color:#2c4450;color:inherit}
+#phOv{position:fixed;inset:0;z-index:9999;background:rgba(6,20,28,.62);display:flex;align-items:center;justify-content:center;padding:14px;overflow:auto}
+#phOv .phBox{background:#fff;color:#14232d;border-radius:20px;padding:16px;width:min(720px,100%);max-height:96vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+body.dark #phOv .phBox{background:#111d24;color:#e6eef1}
+#phOv h3{margin:0 0 10px}
+#phOv .phMain{display:flex;gap:16px;flex-wrap:wrap}
+#phOv .phCw{flex:1 1 280px;max-width:380px}
+#phOv canvas{width:100%;aspect-ratio:1;border-radius:14px;touch-action:none;cursor:grab;border:1.5px solid #c9dbe0;background-color:#fff;background-image:linear-gradient(45deg,#e6edf0 25%,transparent 25%),linear-gradient(-45deg,#e6edf0 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e6edf0 75%),linear-gradient(-45deg,transparent 75%,#e6edf0 75%);background-size:22px 22px;background-position:0 0,0 11px,11px -11px,-11px 0}
+#phOv .phSide{flex:1 1 220px;min-width:0;display:flex;flex-direction:column;gap:8px}
+#phOv .phDemo{pointer-events:none;max-width:260px}
+#phOv .phSt{margin:4px 0;font-weight:600;line-height:1.35}
+#phOv .phAsk{border:1.5px solid #f5c20c;background:#fffbea;border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:6px}
+body.dark #phOv .phAsk{background:#2a2410}
+#phOv .phTools{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 6px}
+#phOv .phTools button.on{background:#0f4c63;color:#fff;border-color:#0f4c63}
+#phOv .phSl{display:flex;gap:16px;flex-wrap:wrap;margin:6px 0}
+#phOv .phSl label{display:flex;align-items:center;gap:8px;font-weight:600}
+#phOv.busy canvas{opacity:.55}#phOv.busy .phTools,#phOv.busy #phOk{pointer-events:none;opacity:.5}
+`;document.head.appendChild(st)}
+setTimeout(phFlush,4000);
+
 (async()=>{await bootStore();syncLoadMeta();await load();gate();if(document.readyState==='complete')syncStart();else window.addEventListener('load',()=>syncStart());setTimeout(lowCheck,3500);setTimeout(backupCheck,9000);setInterval(backupCheck,900000);setTimeout(cobroCheck,6500);setTimeout(fixedRun,4000);setInterval(fixedRun,3600000);setTimeout(resumenCheck,12000);setInterval(resumenCheck,900000);try{themeTick();setInterval(themeTick,60000)}catch(e){}setTimeout(fxApply,3000);setInterval(fxApply,10800000);setTimeout(expCheck,8500);setInterval(expCheck,900000);setTimeout(badgeCobro,2500);setInterval(badgeCobro,300000);setInterval(cobroCheck,900000);setTimeout(cbkRun,25000);setInterval(cbkRun,1800000)})();
 </script></body></html>
