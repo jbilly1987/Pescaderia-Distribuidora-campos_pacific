@@ -1640,7 +1640,7 @@ async function tnAutoSync(){try{localStorage.removeItem('pesc_autosync')}catch(e
 window.addEventListener('load',()=>setTimeout(async()=>{try{if(!localStorage.getItem('pesc_autosync')||!window.firebase||typeof LIC_ON==='undefined'||!LIC_ON||!licLoad())return;fbReady();const u=await new Promise(r=>{const off=firebase.auth().onAuthStateChanged(x=>{off();r(x)})});if(u)await tnAutoSync();else localStorage.removeItem('pesc_autosync')}catch(e){}},2500));
 
 /* ===== fix45: aviso y aplicacion de actualizaciones (todos los clientes) ===== */
-const BUILD='20261128-0154';
+const BUILD='20261128-0207';
 function updBanner(v){if(document.getElementById('updBar'))return;const d=document.createElement('div');d.id='updBar';d.setAttribute('role','alert');
  d.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:99999;max-width:460px;margin:0 auto;background:#0f6e8c;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 8px 28px rgba(0,0,0,.35);font:600 14px/1.35 system-ui,sans-serif;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
  d.innerHTML='<span style="flex:1;min-width:180px">🔄 Hay una versión nueva del sistema.<br><small style="font-weight:400;opacity:.9">Si tiene una venta a medias, termínela y luego actualice.</small></span><button id="updGo" style="background:#f5c20c;color:#14232d;border:0;border-radius:9px;padding:9px 14px;font:700 14px system-ui,sans-serif">Actualizar ahora</button><button id="updLater" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:9px;padding:9px 12px;font:600 13px system-ui,sans-serif">Después</button>';
@@ -4097,6 +4097,183 @@ body.dark #phOv .phAsk{background:#2a2410}
 #phOv.busy canvas{opacity:.55}#phOv.busy .phTools,#phOv.busy #phOk{pointer-events:none;opacity:.5}
 `;document.head.appendChild(st)}
 setTimeout(phFlush,4000);
+
+/* fix155: galería de dibujos propios para productos (se reconocen por el nombre) */
+const DW=(()=>{
+const G=(id,a,b,v)=>'<linearGradient id="'+id+'" x1="0" y1="0" x2="'+(v?0:1)+'" y2="'+(v?1:0)+'"><stop offset="0" stop-color="'+a+'"/><stop offset="1" stop-color="'+b+'"/></linearGradient>';
+const R=(id,a,b)=>'<radialGradient id="'+id+'" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="'+a+'"/><stop offset="1" stop-color="'+b+'"/></radialGradient>';
+const wrap=(inner,defs)=>'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><defs>'+(defs||'')+'</defs>'+inner+'</svg>';
+/* pez genérico mirando a la izquierda */
+function fish(o){const x0=o.x0||18,x1=o.x1||158,cy=100,h=o.h,hd=o.head||1,id=o.id||'f';
+ const top=o.topY?o.topY:cy-h,bot=cy+h*(o.bot||.85);
+ const body='M'+x0+','+(cy+(o.mouthY||0))+' C'+(x0+18*hd)+','+(top+h*.25)+' '+(x0+60)+','+top+' '+(x0+(x1-x0)*.55)+','+top+' C'+(x1-28)+','+(top+h*.2)+' '+(x1-6)+','+(cy-h*.22)+' '+x1+','+(cy-h*.14)+' L'+x1+','+(cy+h*.14)+' C'+(x1-6)+','+(cy+h*.22)+' '+(x1-30)+','+(bot-h*.15)+' '+(x0+(x1-x0)*.55)+','+bot+' C'+(x0+55)+','+bot+' '+(x0+14*hd)+','+(cy+h*.55)+' '+x0+','+(cy+(o.mouthY||0))+'Z';
+ let tail;const tw=o.tw||30,th=o.th||h*.95;
+ if(o.tail==='lunate')tail='M'+(x1-4)+','+(cy-4)+' C'+(x1+8)+','+(cy-th*.4)+' '+(x1+tw*.6)+','+(cy-th*.8)+' '+(x1+tw)+','+(cy-th)+' C'+(x1+tw*.55)+','+(cy-th*.35)+' '+(x1+tw*.55)+','+(cy+th*.35)+' '+(x1+tw)+','+(cy+th)+' C'+(x1+tw*.6)+','+(cy+th*.8)+' '+(x1+8)+','+(cy+th*.4)+' '+(x1-4)+','+(cy+4)+'Z';
+ else if(o.tail==='round')tail='M'+(x1-4)+','+(cy-h*.12)+' C'+(x1+tw*.5)+','+(cy-th*.9)+' '+(x1+tw*1.1)+','+(cy-th*.6)+' '+(x1+tw)+','+cy+' C'+(x1+tw*1.1)+','+(cy+th*.6)+' '+(x1+tw*.5)+','+(cy+th*.9)+' '+(x1-4)+','+(cy+h*.12)+'Z';
+ else tail='M'+(x1-4)+','+(cy-5)+' L'+(x1+tw)+','+(cy-th)+' C'+(x1+tw*.6)+','+(cy-th*.3)+' '+(x1+tw*.6)+','+(cy+th*.3)+' '+(x1+tw)+','+(cy+th)+' L'+(x1-4)+','+(cy+5)+'Z';
+ const d=G(id+'b',o.back,o.belly,1)+G(id+'f',o.fin,o.fin2||o.fin,1)+'<clipPath id="'+id+'c"><path d="'+body+'"/></clipPath>';
+ const ex=o.eyeX||x0+20,ey=o.eyeY||cy-h*.28,er=o.er||Math.max(4,h*.16);
+ let s='<g>';
+ s+='<path d="'+tail+'" fill="url(#'+id+'f)" stroke="'+o.line+'" stroke-width="1.6" stroke-linejoin="round"/>';
+ s+=(o.fins||'');
+ s+='<path d="'+body+'" fill="url(#'+id+'b)" stroke="'+o.line+'" stroke-width="2" stroke-linejoin="round"/>';
+ s+='<g clip-path="url(#'+id+'c)">'+(o.marks||'')+'<path d="M'+(x0+8)+','+(cy+h*.1)+' Q'+((x0+x1)/2)+','+(cy+h*.05)+' '+x1+','+(cy+2)+'" stroke="#fff" stroke-opacity=".35" stroke-width="'+(h*.18)+'" fill="none"/></g>';
+ s+='<path d="M'+(x0+(o.gill||34))+','+(cy-h*.62)+' Q'+(x0+(o.gill||34)+10)+','+cy+' '+(x0+(o.gill||34))+','+(cy+h*.6)+'" stroke="'+o.line+'" stroke-opacity=".55" stroke-width="1.8" fill="none"/>';
+ s+=(o.pect||'');
+ s+='<circle cx="'+ex+'" cy="'+ey+'" r="'+er+'" fill="#fff" stroke="'+o.line+'" stroke-width="1.2"/><circle cx="'+(ex-er*.15)+'" cy="'+ey+'" r="'+er*.58+'" fill="#111"/><circle cx="'+(ex-er*.35)+'" cy="'+(ey-er*.3)+'" r="'+er*.2+'" fill="#fff"/>';
+ s+='<path d="M'+x0+','+(cy+(o.mouthY||0))+' l'+(o.mouthL||9)+','+(o.mouthD||3)+'" stroke="'+o.line+'" stroke-width="1.6" stroke-linecap="round"/>';
+ return {s:s+'</g>',d}}
+const fin=(d,c,l)=>'<path d="'+d+'" fill="'+c+'" stroke="'+l+'" stroke-width="1.4" stroke-linejoin="round"/>';
+/* ---- especies ---- */
+const SP={
+ sardina:()=>fish({id:'sa',h:21,x0:22,x1:160,back:'#2c6a8f',belly:'#eef4f7',fin:'#9fb9c6',line:'#1f4a63',tail:'fork',tw:26,th:20,er:5.5,gill:30,
+  fins:fin('M92,82 L100,70 L112,74 L122,82Z','#8fb0c0','#1f4a63')+'<path d="M121,81 C134,72 150,68 168,70" stroke="#1f4a63" stroke-width="1.8" fill="none" stroke-linecap="round"/>'+fin('M120,116 L130,124 L140,117Z','#a9c2ce','#1f4a63'),
+  marks:'<circle cx="58" cy="90" r="3.4" fill="#1f4a63" opacity=".8"/><path d="M40,93 C80,90 120,90 160,96" stroke="#7fd0d8" stroke-width="2" opacity=".55" fill="none"/>'}),
+ caballa:()=>fish({id:'cb',h:27,back:'#2f7f86',belly:'#f1f3ee',fin:'#7c9aa0',line:'#1d4c52',tail:'lunate',tw:28,th:26,
+  fins:fin('M64,76 L72,62 L84,64 L92,74Z','#6f8f95','#1d4c52')+fin('M104,75 L112,66 L122,74Z','#6f8f95','#1d4c52')+fin('M106,124 L114,132 L124,124Z','#8aa5aa','#1d4c52')+'<g fill="#5e7f85">'+[0,1,2,3].map(i=>'<path d="M'+(128+i*7)+','+(79+i*1.5)+' l4,-4 l2,5Z"/><path d="M'+(128+i*7)+','+(121-i*1.5)+' l4,4 l2,-5Z"/>').join('')+'</g>',
+  marks:'<g stroke="#163a40" stroke-width="2.6" fill="none" opacity=".75">'+[0,1,2,3,4,5,6,7,8].map(i=>'<path d="M'+(50+i*12)+',72 q5,8 0,14 q-5,6 1,12"/>').join('')+'</g>'}),
+ atunNegro:()=>fish({id:'an',h:38,x0:20,x1:152,back:'#1b2b4c',belly:'#eef1f5',fin:'#2a3550',line:'#121c33',tail:'lunate',tw:34,th:36,gill:38,
+  fins:fin('M58,64 L70,44 L84,50 L96,64Z','#26314c','#121c33')+fin('M104,64 L112,54 L120,64Z','#26314c','#121c33')+fin('M104,134 L112,146 L122,134Z','#33405c','#121c33')+'<g fill="#3a4766">'+[0,1,2,3].map(i=>'<path d="M'+(124+i*7)+','+(69+i*3)+' l4,-5 l2,6Z"/><path d="M'+(124+i*7)+','+(131-i*3)+' l4,5 l2,-6Z"/>').join('')+'</g>',
+  marks:'<g stroke="#0c1426" stroke-width="3" fill="none" opacity=".8">'+[0,1,2,3,4,5].map(i=>'<path d="M'+(92+i*11)+',64 q-6,9 2,16 q6,6 -1,12"/>').join('')+'</g><g fill="#141d33">'+[[58,108],[66,114],[54,116],[72,110]].map(p=>'<circle cx="'+p[0]+'" cy="'+p[1]+'" r="2.6"/>').join('')+'</g>',
+  pect:fin('M64,100 C78,94 92,96 100,104 C88,104 76,106 64,104Z','#2a3550','#121c33')}),
+ atun:()=>fish({id:'at',h:38,x0:20,x1:152,back:'#22355e',belly:'#eef1f5',fin:'#f2c230',line:'#152242',tail:'lunate',tw:34,th:36,gill:38,
+  fins:fin('M58,64 L70,46 L84,50 L96,64Z','#2c3c62','#152242')+fin('M100,64 L114,34 L118,64Z','#f2c230','#a07d10')+fin('M100,134 L114,166 L118,134Z','#f2c230','#a07d10')+'<g fill="#f2c230">'+[0,1,2,3].map(i=>'<path d="M'+(124+i*7)+','+(69+i*3)+' l4,-5 l2,6Z"/><path d="M'+(124+i*7)+','+(131-i*3)+' l4,5 l2,-6Z"/>').join('')+'</g>',
+  marks:'<path d="M40,96 C80,90 120,92 152,98" stroke="#f2c230" stroke-width="5" opacity=".7" fill="none"/>'}),
+ pargo:()=>fish({id:'pg',h:46,x0:22,x1:150,back:'#c8323a',belly:'#f6b7a6',fin:'#e0564e',line:'#7d1d22',tail:'fork',tw:30,th:38,gill:40,mouthY:4,
+  fins:fin('M50,60 L56,44 L64,52 L70,40 L78,50 L86,40 L94,50 L102,42 L110,52 L124,58 L128,66Z','#d8424a','#7d1d22')+fin('M96,140 L108,154 L122,138Z','#e0564e','#7d1d22'),
+  marks:'<g fill="#fff" opacity=".18">'+[0,1,2,3,4,5,6].map(i=>'<path d="M'+(48+i*14)+',88 l6,-3 l6,3 l-6,3Z"/>').join('')+'</g>',pect:fin('M66,108 C80,102 92,106 98,114 C86,114 76,114 66,112Z','#e86a5e','#7d1d22')}),
+ corvina:()=>fish({id:'cv',h:34,back:'#8a9aa0',belly:'#f2efe4',fin:'#b7a984',line:'#4b5a60',tail:'round',tw:24,th:28,
+  fins:fin('M56,70 L64,56 L74,58 L82,68Z','#9aa4a0','#4b5a60')+fin('M84,68 C100,60 120,62 138,74 L136,80Z','#a9aaa0','#4b5a60')+fin('M104,128 L114,140 L126,128Z','#c8b88d','#4b5a60'),
+  marks:'<path d="M36,94 C70,84 110,84 160,96" stroke="#d7c48e" stroke-width="4" opacity=".55" fill="none"/>'}),
+ dorado:()=>fish({id:'do',h:40,x0:24,x1:156,back:'#1e8f6a',belly:'#f2d24a',fin:'#2a7fb8',line:'#14513d',tail:'fork',tw:30,th:36,head:.2,topY:58,mouthY:6,gill:30,eyeY:88,
+  fins:fin('M30,62 C60,48 110,50 150,82 L146,88 C110,64 70,62 32,70Z','#2a7fb8','#14513d')+fin('M90,136 C110,134 132,124 150,114 L146,110 C128,118 110,126 92,130Z','#3a8fc4','#14513d'),
+  marks:'<g fill="#2a7fb8" opacity=".75">'+[[60,92],[78,100],[96,94],[112,104],[70,112],[124,96],[88,116]].map(p=>'<circle cx="'+p[0]+'" cy="'+p[1]+'" r="2.8"/>').join('')+'</g>'}),
+ tilapia:()=>fish({id:'tl',h:48,x0:26,x1:146,back:'#5d6d6a',belly:'#d9ddd2',fin:'#6f7e7a',line:'#39443f',tail:'round',tw:26,th:34,gill:38,mouthY:6,
+  fins:fin('M52,58 L58,44 L66,52 L74,42 L82,50 L90,42 L98,50 L108,44 L120,52 L136,70 L130,76Z','#6b7a76','#39443f')+fin('M96,144 L110,152 L128,132Z','#6f7e7a','#39443f'),
+  marks:'<g fill="#3f4b47" opacity=".35">'+[0,1,2,3,4,5].map(i=>'<rect x="'+(56+i*15)+'" y="50" width="6" height="110" rx="3"/>').join('')+'</g>'}),
+ robalo:()=>fish({id:'rb',h:30,back:'#6e7c78',belly:'#f4f5f1',fin:'#a2aca6',line:'#3e4844',tail:'fork',tw:26,th:26,mouthY:-2,
+  fins:fin('M58,74 L66,58 L74,64 L82,56 L90,72Z','#909a95','#3e4844')+fin('M98,72 L108,62 L124,74Z','#909a95','#3e4844')+fin('M108,124 L116,134 L126,124Z','#a2aca6','#3e4844'),
+  marks:'<path d="M42,92 C80,90 120,92 160,99" stroke="#1f2624" stroke-width="2.6" fill="none"/>'})};
+function spSvg(k){const f=SP[k]();return wrap('<g transform="translate(0,4)">'+f.s+'</g>',f.d)}
+/* ---- mariscos ---- */
+const SEA={
+ calamar:()=>wrap('<g stroke="#8a4a5e" stroke-width="1.6" stroke-linejoin="round">'+
+  '<path d="M52,92 C40,84 26,82 14,86 M52,96 C38,96 24,100 12,108 M54,100 C42,106 32,116 24,128 M54,90 C44,78 34,72 22,70" fill="none" stroke-width="5" stroke-linecap="round" stroke="#e7b7c2"/>'+
+  '<path d="M52,92 C40,84 26,82 14,86 M52,96 C38,96 24,100 12,108 M54,100 C42,106 32,116 24,128 M54,90 C44,78 34,72 22,70" fill="none" stroke-width="1.2"/>'+
+  '<path d="M150,96 L188,70 L180,98 L188,124Z" fill="url(#cf)"/>'+
+  '<path d="M60,82 C90,74 140,78 176,96 C140,114 90,118 60,110 C54,104 54,88 60,82Z" fill="url(#cm)"/>'+
+  '<ellipse cx="56" cy="96" rx="12" ry="15" fill="#efc4cd"/><circle cx="58" cy="90" r="5.5" fill="#fff"/><circle cx="57" cy="90" r="3.4" fill="#222"/></g>'+
+  '<g fill="#a2546b" opacity=".55">'+[[80,90],[92,100],[104,88],[116,98],[128,92],[100,106],[140,100],[86,104],[150,94]].map(p=>'<circle cx="'+p[0]+'" cy="'+p[1]+'" r="2.2"/>').join('')+'</g><path d="M70,86 C100,82 140,86 168,96" stroke="#fff" stroke-opacity=".5" stroke-width="4" fill="none"/>',G('cm','#f3d2d9','#d891a4',1)+G('cf','#eab8c4','#c97f94',1)),
+ camaron:()=>wrap('<g stroke="#a3401f" stroke-width="1.6" stroke-linejoin="round"><path d="M60,64 C30,40 20,30 14,24 M58,66 C40,52 34,48 22,48" fill="none" stroke-width="1.4"/>'+
+  '<path d="M150,140 L176,156 L168,134 L180,120 L154,128Z" fill="#f08a5d"/>'+
+  [0,1,2,3,4].map(i=>{const a=-20+i*30;return '<path d="M'+(70+i*16)+','+(70+i*2)+' C'+(86+i*16)+','+(60+i*8)+' '+(100+i*14)+','+(80+i*14)+' '+(92+i*12)+','+(100+i*10)+'" fill="#f59a6b"/>'}).join('')+
+  '<path d="M56,72 C70,54 110,58 136,80 C158,98 164,122 152,138 C146,124 132,110 112,108 C90,106 70,104 58,92 C52,86 52,78 56,72Z" fill="url(#cs)"/>'+
+  [0,1,2,3].map(i=>'<path d="M'+(92+i*14)+','+(64+i*5)+' C'+(88+i*14)+','+(80+i*5)+' '+(90+i*12)+','+(96+i*4)+' '+(98+i*10)+','+(106+i*4)+'" fill="none" stroke-opacity=".6"/>').join('')+
+  [0,1,2,3].map(i=>'<path d="M'+(80+i*12)+','+(104+i*1)+' l-4,14" fill="none" stroke-width="2"/>').join('')+
+  '<circle cx="66" cy="74" r="4" fill="#222" stroke="none"/></g><path d="M70,66 C100,60 130,76 146,100" stroke="#fff" stroke-opacity=".45" stroke-width="5" fill="none"/>',G('cs','#ffb38a','#e8673a',1)),
+ langosta:()=>wrap('<g stroke="#5e2a14" stroke-width="1.6" stroke-linejoin="round"><path d="M40,90 C20,60 10,40 6,20 M42,96 C22,92 12,96 4,104" fill="none" stroke="#8a3e1e" stroke-width="2"/>'+
+  '<path d="M60,84 C80,70 120,72 140,90 L176,84 L186,100 L176,116 L140,110 C120,128 80,130 60,116 C52,106 52,94 60,84Z" fill="url(#lg)"/>'+[0,1,2].map(i=>'<path d="M'+(110+i*12)+',78 q4,22 0,44" fill="none"/>').join('')+
+  '<circle cx="58" cy="94" r="4" fill="#111"/><path d="M76,118 l-6,18 M92,122 l-4,18 M108,122 l0,18" fill="none" stroke-width="3"/></g>',G('lg','#e07a3c','#a6431d',1)),
+ pulpo:()=>wrap('<g stroke="#7b2f5a" stroke-width="1.8" stroke-linejoin="round">'+[[60,150,30,170],[80,156,70,186],[104,158,110,188],[126,152,150,176],[144,140,176,150],[50,138,18,146]].map(a=>'<path d="M'+(a[0]+10)+','+(a[1]-30)+' C'+a[0]+','+a[1]+' '+a[2]+','+(a[3]-10)+' '+a[2]+','+a[3]+'" fill="none" stroke-width="12" stroke="#c75a8f" stroke-linecap="round"/>').join('')+
+  '<path d="M60,120 C40,60 80,24 104,26 C130,28 160,60 142,120 C124,136 80,136 60,120Z" fill="url(#pu)"/><circle cx="88" cy="96" r="7" fill="#fff"/><circle cx="118" cy="96" r="7" fill="#fff"/><circle cx="89" cy="97" r="4" fill="#222"/><circle cx="117" cy="97" r="4" fill="#222"/></g><ellipse cx="94" cy="54" rx="16" ry="10" fill="#fff" opacity=".3"/>',G('pu','#e58bb5','#b04a80',1)),
+ almeja:()=>wrap('<g stroke="#5a4636" stroke-width="2" stroke-linejoin="round"><path d="M40,120 C30,70 70,40 100,40 C130,40 170,70 160,120 C140,140 60,140 40,120Z" fill="url(#am)"/>'+[0,1,2,3,4,5,6].map(i=>'<path d="M100,46 Q'+(52+i*16)+',90 '+(52+i*16)+',132" fill="none" stroke-opacity=".35"/>').join('')+'<path d="M84,128 C90,140 110,140 116,128Z" fill="#8a6a52"/></g>',G('am','#d7c3a8','#8f7458',1)),
+ cangrejo:()=>wrap('<g stroke="#7d2014" stroke-width="1.8" stroke-linejoin="round" fill="#d9442f">'+[0,1,2].map(i=>'<path d="M'+(64-i*4)+','+(118+i*8)+' l-24,'+(10+i*6)+' M'+(136+i*4)+','+(118+i*8)+' l24,'+(10+i*6)+'" fill="none" stroke-width="6" stroke="#c23a27" stroke-linecap="round"/>').join('')+
+  '<path d="M60,90 C46,70 40,56 44,46 M140,90 C154,70 160,56 156,46" fill="none" stroke-width="7" stroke="#c23a27" stroke-linecap="round"/><path d="M30,46 C30,30 56,28 58,44 C52,40 46,44 44,52Z M170,46 C170,30 144,28 142,44 C148,40 154,44 156,52Z"/>'+
+  '<path d="M50,110 C50,80 150,80 150,110 C150,132 50,132 50,110Z" fill="url(#cg)"/><circle cx="88" cy="84" r="5" fill="#fff"/><circle cx="112" cy="84" r="5" fill="#fff"/><circle cx="88" cy="84" r="2.6" fill="#222"/><circle cx="112" cy="84" r="2.6" fill="#222"/></g>',G('cg','#f06a4f','#b8301e',1)),
+ filete:()=>wrap('<g stroke="#b5654f" stroke-width="2" stroke-linejoin="round"><path d="M24,110 C40,70 120,58 176,84 C168,112 120,140 60,138 C40,136 26,126 24,110Z" fill="url(#fi)"/>'+[0,1,2,3,4,5].map(i=>'<path d="M'+(56+i*20)+',74 C'+(48+i*20)+',100 '+(54+i*20)+',120 '+(62+i*20)+',136" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="2.5"/>').join('')+'</g>',G('fi','#ffd2c2','#f19c84',1)),
+ hielo:()=>wrap('<g stroke="#6aa9c9" stroke-width="2" stroke-linejoin="round">'+[[40,90,0],[96,70,12],[74,118,-8],[124,112,6]].map(c=>'<g transform="rotate('+c[2]+' '+(c[0]+28)+' '+(c[1]+28)+')"><rect x="'+c[0]+'" y="'+c[1]+'" width="56" height="56" rx="10" fill="url(#ic)" opacity=".92"/><path d="M'+(c[0]+10)+','+(c[1]+14)+' l14,-6" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".8"/></g>').join('')+'</g>',G('ic','#eaf8ff','#a9dcf3',1))};
+/* ---- empaques: caja y bolsa con el producto adentro ---- */
+function inner(k,tf){const f=SP[k]?SP[k]():null;if(!f)return{s:'',d:''};return{s:'<g transform="'+tf+'">'+f.s+'</g>',d:f.d}}
+function caja(k){const a=inner(k,'translate(42,26) scale(.6) rotate(-14 100 100)'),b=inner(k,'translate(70,18) scale(.6) rotate(-4 100 100)'),c=inner(k,'translate(28,40) scale(.58) rotate(-24 100 100)');
+ return wrap('<path d="M30,92 L60,74 L176,74 L150,92Z" fill="#b98a55" stroke="#6b4a26" stroke-width="2"/>'+c.s+a.s+b.s+
+ '<path d="M150,92 L176,74 L176,150 L150,170Z" fill="url(#bxs)" stroke="#6b4a26" stroke-width="2" stroke-linejoin="round"/><rect x="30" y="92" width="120" height="78" fill="url(#bxf)" stroke="#6b4a26" stroke-width="2"/>'+
+ '<path d="M30,92 L14,110 L134,110 L150,92Z" fill="#d4a46c" stroke="#6b4a26" stroke-width="2" stroke-linejoin="round"/><rect x="58" y="124" width="64" height="30" rx="4" fill="#fff" opacity=".85" stroke="#6b4a26" stroke-width="1.4"/><path d="M66,134 h48 M66,144 h32" stroke="#6b4a26" stroke-width="3" stroke-linecap="round"/>',
+ a.d+G('bxf','#d9ab72','#b5844c',1)+G('bxs','#b07d45','#8d6033',1))}
+function bolsa(k){const a=inner(k,'translate(30,50) scale(.62) rotate(-30 100 100)'),b=inner(k,'translate(48,64) scale(.62) rotate(-18 100 100)'),c=inner(k,'translate(40,84) scale(.6) rotate(-40 100 100)');
+ return wrap('<path d="M60,40 C58,70 34,90 34,130 C34,170 60,180 100,180 C140,180 166,170 166,130 C166,90 142,70 140,40Z" fill="#dff2fb" opacity=".55"/>'+a.s+b.s+c.s+
+ '<path d="M60,40 C58,70 34,90 34,130 C34,170 60,180 100,180 C140,180 166,170 166,130 C166,90 142,70 140,40Z" fill="url(#bg)" stroke="#7fb6cf" stroke-width="2.2"/><path d="M48,110 C44,130 46,150 58,164" stroke="#fff" stroke-width="6" stroke-linecap="round" fill="none" opacity=".7"/>'+
+ '<path d="M60,40 C76,30 124,30 140,40 C124,48 76,48 60,40Z" fill="#cfe9f5" stroke="#7fb6cf" stroke-width="2"/><path d="M88,40 C84,22 96,14 100,24 C104,14 116,22 112,40Z" fill="#f2c230" stroke="#a07d10" stroke-width="1.6"/>',
+ a.d+'<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".45"/><stop offset=".5" stop-color="#bfe4f4" stop-opacity=".15"/><stop offset="1" stop-color="#9fd2ea" stop-opacity=".4"/></linearGradient>')}
+/* ---- artículos de pesca ---- */
+const badge=t=>{if(!t)return '';const w=t.length*21+16;return '<g><rect x="'+(198-w)+'" y="2" rx="16" width="'+w+'" height="46" fill="#0f4c63" stroke="#fff" stroke-width="3"/><text x="'+(198-w/2)+'" y="36" font-family="Arial,Helvetica,sans-serif" font-weight="800" font-size="34" fill="#fff" text-anchor="middle">'+t+'</text></g>'};
+const GEAR={
+ anzuelo:t=>wrap('<g fill="none" stroke-linecap="round"><path d="M110,30 L110,128 C110,168 50,170 50,128 L50,112" stroke="#5d6b74" stroke-width="13"/><path d="M110,30 L110,128 C110,168 50,170 50,128 L50,112" stroke="url(#hk)" stroke-width="9"/><path d="M50,108 L64,122" stroke="#5d6b74" stroke-width="7"/><path d="M50,108 L62,120" stroke="#dfe6ea" stroke-width="3"/><circle cx="110" cy="24" r="11" stroke="#5d6b74" stroke-width="7"/><circle cx="110" cy="24" r="11" stroke="#cfd8dd" stroke-width="3"/><path d="M106,44 L106,124" stroke="#fff" stroke-width="2.5" opacity=".8"/></g>'+badge(t),G('hk','#e9eef1','#8a99a2',0)),
+ cuerda:t=>wrap('<ellipse cx="100" cy="150" rx="62" ry="18" fill="#2f5d73" stroke="#173544" stroke-width="2"/><rect x="38" y="62" width="124" height="88" fill="url(#cu)"/><g stroke="#5fb79a" stroke-opacity=".55" stroke-width="1.4">'+[0,1,2,3,4,5,6,7,8,9,10].map(i=>'<path d="M40,'+(68+i*8)+' C80,'+(74+i*8)+' 120,'+(74+i*8)+' 160,'+(68+i*8)+'" fill="none"/>').join('')+'</g><path d="M38,62 L38,150 M162,62 L162,150" stroke="#173544" stroke-width="2"/><ellipse cx="100" cy="62" rx="62" ry="18" fill="#3b7590" stroke="#173544" stroke-width="2"/><ellipse cx="100" cy="62" rx="18" ry="6" fill="#173544"/><path d="M160,100 C176,92 184,70 170,52 C160,40 176,30 188,34" stroke="#7fcfb3" stroke-width="2" fill="none"/><path d="M50,80 L50,140" stroke="#fff" stroke-width="5" opacity=".35"/>'+badge(t),G('cu','#bfe8d6','#5aa98b',0)),
+ sacavueltas:t=>wrap('<g transform="rotate(-35 100 100)" stroke="#2b3238" stroke-width="2"><circle cx="100" cy="36" r="17" fill="none" stroke="#7d8a93" stroke-width="8"/><circle cx="100" cy="164" r="17" fill="none" stroke="#7d8a93" stroke-width="8"/><circle cx="100" cy="36" r="17" fill="none" stroke="#dfe6ea" stroke-width="3"/><circle cx="100" cy="164" r="17" fill="none" stroke="#dfe6ea" stroke-width="3"/><path d="M84,74 C84,58 116,58 116,74 L116,126 C116,142 84,142 84,126Z" fill="url(#sv)"/><rect x="90" y="52" width="20" height="10" rx="4" fill="#9aa6ae"/><rect x="90" y="138" width="20" height="10" rx="4" fill="#9aa6ae"/><path d="M92,76 L92,124" stroke="#fff" stroke-width="3" opacity=".6"/></g>'+badge(t),G('sv','#5b656c','#22292e',0)),
+ gasillas:t=>wrap('<g stroke="#5d6b74" stroke-width="1.6">'+[[50,60,-20],[96,48,10],[132,78,-6],[64,112,24],[110,120,-14],[40,150,4],[140,146,30]].map(c=>'<g transform="rotate('+c[2]+' '+(c[0]+14)+' '+(c[1]+18)+')"><rect x="'+c[0]+'" y="'+c[1]+'" width="28" height="36" rx="7" fill="url(#gs)"/><ellipse cx="'+(c[0]+14)+'" cy="'+(c[1]+4)+'" rx="10" ry="3.4" fill="#4a565e"/><path d="M'+(c[0]+6)+','+(c[1]+10)+' v20" stroke="#fff" stroke-width="3" opacity=".7"/></g>').join('')+'</g>'+badge(t),G('gs','#e9eef1','#8d9ba3',0)),
+ plomoBala:t=>wrap('<g stroke="#3b4248" stroke-width="2" stroke-linejoin="round"><path d="M100,24 C70,60 62,120 66,170 L134,170 C138,120 130,60 100,24Z" fill="url(#pb)"/><ellipse cx="100" cy="170" rx="34" ry="9" fill="#5e676e"/><ellipse cx="100" cy="170" rx="7" ry="3" fill="#1b2024"/><path d="M84,60 C76,90 74,130 78,160" stroke="#fff" stroke-width="5" opacity=".35" fill="none"/></g>'+badge(t),G('pb','#a6b0b6','#4f585e',0)),
+ plomoBandera:t=>wrap('<g stroke="#3b4248" stroke-width="2" stroke-linejoin="round"><path d="M62,40 L150,64 C160,96 150,140 120,166 C96,150 70,120 62,40Z" fill="url(#pf)"/><circle cx="76" cy="58" r="8" fill="#fff" stroke="#3b4248"/><path d="M84,74 C92,110 104,136 118,152" stroke="#fff" stroke-width="5" opacity=".35" fill="none"/></g>'+badge(t),G('pf','#a6b0b6','#4f585e',0)),
+ boyaBala:t=>wrap('<g stroke="#4a2a12" stroke-width="2" stroke-linejoin="round"><path d="M100,14 L100,40 M100,160 L100,190" stroke="#333" stroke-width="3"/><path d="M100,34 C74,60 68,100 72,126 L128,126 C132,100 126,60 100,34Z" fill="url(#bo)"/><path d="M72,126 C74,148 88,164 100,166 C112,164 126,148 128,126Z" fill="url(#bw)"/><path d="M86,60 C80,80 78,104 80,122" stroke="#fff" stroke-width="5" opacity=".45" fill="none"/></g>'+badge(t),G('bo','#ff9a3c','#e0561c',0)+G('bw','#ffffff','#cfd8dd',0)),
+ boyaRedonda:t=>wrap('<path d="M100,14 L100,40 M100,160 L100,190" stroke="#333" stroke-width="3"/><circle cx="100" cy="100" r="62" fill="url(#br)" stroke="#7a1414" stroke-width="2"/><path d="M38,100 A62,62 0 0 0 162,100Z" fill="#fff" stroke="#7a1414" stroke-width="2"/><path d="M38,100 h124" stroke="#7a1414" stroke-width="2"/><ellipse cx="78" cy="72" rx="16" ry="10" fill="#fff" opacity=".45"/>'+badge(t),R('br','#ff6a5a','#c21f1f')),
+ chispas:t=>wrap('<g transform="translate(100,100) scale(1.12) rotate(-28) translate(-90,-100)"><g stroke="#5d6b74" stroke-width="3" fill="none" stroke-linecap="round"><circle cx="172" cy="104" r="7"/><circle cx="52" cy="98" r="6"/><path d="M46,98 L34,98"/></g>'+
+  '<path d="M60,96 C80,70 130,72 166,100 C140,124 90,128 60,104Z" fill="url(#chs)" stroke="#6b767c" stroke-width="2" stroke-linejoin="round"/><path d="M70,94 C96,80 130,82 156,98" stroke="#fff" stroke-width="5" opacity=".75" fill="none" stroke-linecap="round"/>'+
+  '<g fill="#e5352b">'+[[74,98,3],[86,95,4],[99,94,4.6],[112,95,4.6],[125,97,4.2],[137,100,3.6],[148,103,3]].map(c=>'<circle cx="'+c[0]+'" cy="'+(c[1]+4)+'" r="'+c[2]+'"/>').join('')+'</g>'+
+  '<g stroke="#cfe9d8" stroke-width="2" stroke-linecap="round" opacity=".95">'+[-36,-28,-20,-12,-4,4,12,20,28,36].map((a,i)=>'<path d="M30,98 C18,'+(98+a*.4)+' 6,'+(98+a*.9)+' -14,'+(98+a*1.3)+'" stroke="'+(i%3?'#ffffff':'#8fdcaa')+'" stroke-width="'+(i%2?2.4:1.8)+'" fill="none"/>').join('')+'</g>'+
+  '<rect x="28" y="93" width="10" height="10" rx="2" fill="#d4342a"/>'+
+  '<g stroke="#5d6b74" stroke-width="3.4" fill="none" stroke-linecap="round"><path d="M30,98 C22,86 14,84 10,92"/><path d="M30,98 C22,110 14,112 10,104"/><path d="M30,98 L14,98 C6,98 6,106 12,108"/></g></g>'+badge(t),G('chs','#ffffff','#9aa6ad',1)),
+ baterias:t=>wrap('<g stroke="#1d2a33" stroke-width="2">'+[[52,-8],[102,8]].map(c=>'<g transform="rotate('+c[1]+' '+(c[0]+22)+' 104)"><rect x="'+(c[0]+14)+'" y="30" width="16" height="10" rx="3" fill="#c9d1d6"/><rect x="'+c[0]+'" y="38" width="44" height="132" rx="10" fill="url(#ba)"/><rect x="'+c[0]+'" y="38" width="44" height="40" rx="10" fill="#f2c230"/><rect x="'+c[0]+'" y="68" width="44" height="10" fill="#f2c230" stroke="none"/><path d="M'+(c[0]+22)+',100 v24 M'+(c[0]+10)+',112 h24" stroke="#fff" stroke-width="4"/><rect x="'+(c[0]+6)+'" y="44" width="6" height="120" rx="3" fill="#fff" opacity=".35" stroke="none"/></g>').join('')+'</g>'+badge(t),G('ba','#2b3a45','#11191f',0)),
+ guantes:t=>wrap('<g stroke="#9a3b0c" stroke-width="2" stroke-linejoin="round"><path d="M60,180 L60,120 C52,110 40,96 34,82 C30,72 40,66 46,74 L60,94 L58,46 C58,38 70,38 70,46 L72,88 L74,34 C74,26 86,26 86,34 L88,88 L92,40 C92,32 104,32 104,40 L102,92 L110,56 C112,48 124,50 122,58 L114,110 C112,130 112,150 116,180Z" fill="url(#gl)"/><rect x="58" y="160" width="60" height="22" rx="4" fill="#3d6f8a" stroke="#22465a"/><path d="M66,170 h44" stroke="#fff" stroke-width="3" opacity=".6"/></g><g transform="translate(46,6) rotate(12 100 100)" opacity=".9"><path d="M60,180 L60,120 C52,110 40,96 34,82 C30,72 40,66 46,74 L60,94 L58,46 C58,38 70,38 70,46 L72,88 L74,34 C74,26 86,26 86,34 L88,88 L92,40 C92,32 104,32 104,40 L102,92 L110,56 C112,48 124,50 122,58 L114,110 C112,130 112,150 116,180Z" fill="url(#gl2)" stroke="#9a3b0c" stroke-width="2"/></g>'+badge(t),G('gl','#ff9a4a','#e2621c',1)+G('gl2','#ffb47a','#ea7a3a',1)),
+ punal:t=>wrap('<g transform="rotate(-38 100 100)" stroke-linejoin="round"><path d="M92,20 C108,40 112,80 110,112 L88,112 C86,80 86,44 92,20Z" fill="url(#kn)" stroke="#59656c" stroke-width="2"/><path d="M96,30 C100,56 102,84 101,108" stroke="#fff" stroke-width="3" opacity=".7" fill="none"/><rect x="78" y="110" width="44" height="12" rx="5" fill="#b9a26a" stroke="#6b5a2a" stroke-width="2"/><path d="M86,122 L114,122 L116,178 C110,186 90,186 84,178Z" fill="url(#kh)" stroke="#3a2412" stroke-width="2"/><circle cx="100" cy="140" r="3.4" fill="#d9c58a"/><circle cx="100" cy="162" r="3.4" fill="#d9c58a"/></g>'+badge(t),G('kn','#f2f5f7','#9aa7ae',0)+G('kh','#8a5a32','#4e2f17',0)),
+ piedra:t=>wrap('<g stroke-linejoin="round" stroke-width="2"><path d="M30,110 L150,80 L176,96 L56,128Z" fill="#f08a3c" stroke="#8a4612"/><path d="M30,110 L56,128 L56,150 L30,132Z" fill="#c4672a" stroke="#8a4612"/><path d="M56,128 L176,96 L176,118 L56,150Z" fill="url(#ps)" stroke="#3e464b"/><path d="M56,139 L176,107" stroke="#8a4612" stroke-width="1.5"/><path d="M48,108 L140,86" stroke="#fff" stroke-width="3" opacity=".4"/></g>'+badge(t),G('ps','#7d878c','#4b5357',0))};
+/* ---- reconocimiento por nombre ---- */
+const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+const FISH=[[/sardina/,'sardina'],[/caballa|macarela|makarela/,'caballa'],[/atun negro|bonito|barrilete/,'atunNegro'],[/atun/,'atun'],[/pargo|huachinango/,'pargo'],[/corvina/,'corvina'],[/dorado|mahi/,'dorado'],[/tilapia/,'tilapia'],[/robalo/,'robalo']];
+const SEAR=[[/calamar|pota/,'calamar'],[/camar|langostino|gamba/,'camaron'],[/langosta/,'langosta'],[/pulpo/,'pulpo'],[/almeja|piangua|ostra|mejill|concha|chucheca/,'almeja'],[/cangrejo|jaiba|punche/,'cangrejo'],[/filete/,'filete'],[/hielo/,'hielo']];
+const GEARR=[[/anzuelo/,'anzuelo'],[/cuerda|nylon|nailon|linea|monofil|sedal/,'cuerda'],[/saca ?vuelta|destorcedor|girator|emerillon/,'sacavueltas'],[/gasilla|crimp|casquillo|grapa/,'gasillas'],[/plomo.*bandera|bandera.*plomo/,'plomoBandera'],[/plomo|plomada/,'plomoBala'],[/boya.*redond|flotador.*redond/,'boyaRedonda'],[/boya|flotador/,'boyaBala'],[/chispa|luz quimica|lightstick/,'chispas'],[/bateria|pila/,'baterias'],[/guante/,'guantes'],[/punal|cuchill|navaja/,'punal'],[/piedra.*afilar|afilador|asentador|piedra de amolar/,'piedra']];
+function label(n,k){let m;if(k==='anzuelo'&&(m=/(\d+\s*\/\s*0)/.exec(n)))return m[1].replace(/\s/g,'');if(k==='cuerda'){if((m=/(?:^|[^\d.,])0(\d{2})(?!\d)/.exec(n)))return '0.'+m[1];if((m=/\b(\d+[.,]\d+)\b/.exec(n)))return m[1].replace(',','.')}if((m=/#\s*(\d+)/.exec(n)))return '#'+m[1];return ''}
+function match(p){const n=norm((p&&p.name)||'');if(!n)return null;
+ for(const [r,k] of GEARR)if(r.test(n)){const t=label(n,k);return {key:k+(t?'|'+t:''),svg:()=>GEAR[k](t)}}
+ for(const [r,k] of FISH)if(r.test(n)){if(/\bcaja\b/.test(n))return {key:k+'|caja',svg:()=>caja(k)};if(/\bbolsa\b/.test(n))return {key:k+'|bolsa',svg:()=>bolsa(k)};return {key:k,svg:()=>spSvg(k)}}
+ for(const [r,k] of SEAR)if(r.test(n))return {key:k,svg:()=>SEA[k]()};return null}
+const LIST=[...Object.keys(SP).map(k=>[k,()=>spSvg(k)]),...Object.keys(SP).slice(0,3).flatMap(k=>[[k+'|caja',()=>caja(k)],[k+'|bolsa',()=>bolsa(k)]]),...Object.keys(SEA).map(k=>[k,()=>SEA[k]()]),...Object.keys(GEAR).map(k=>[k,()=>GEAR[k]('')])];
+const NAMES={sardina:'Sardina',caballa:'Caballa',atunNegro:'Atún negro',atun:'Atún aleta amarilla',pargo:'Pargo rojo',corvina:'Corvina',dorado:'Dorado',tilapia:'Tilapia',robalo:'Róbalo',calamar:'Calamar',camaron:'Camarón',langosta:'Langosta',pulpo:'Pulpo',almeja:'Almeja / piangua',cangrejo:'Cangrejo',filete:'Filete',hielo:'Hielo',anzuelo:'Anzuelo',cuerda:'Cuerda (nylon)',sacavueltas:'Saca vueltas',gasillas:'Gasillas',plomoBala:'Plomo bala',plomoBandera:'Plomo bandera',boyaBala:'Boya bala',boyaRedonda:'Boya redonda',chispas:'Chispas',baterias:'Baterías',guantes:'Guantes',punal:'Puñal',piedra:'Piedra de afilar'};
+function nameOf(key){const [k,v]=String(key).split('|');return (NAMES[k]||k)+(v==='caja'?' en caja':v==='bolsa'?' en bolsa':v?' '+v:'')}
+function byKey(key){const [k,t]=String(key).split('|');if(GEAR[k])return GEAR[k](t||'');if(SP[k])return t==='caja'?caja(k):t==='bolsa'?bolsa(k):spSvg(k);if(SEA[k])return SEA[k]();return null}
+return {match,byKey,LIST,nameOf}})();
+
+/* fix155: dibujos automáticos (foto > dibujo > emoji) y "Elegir dibujo" */
+const DWC={};
+function dwKey(p){if(!p)return null;if(p.dw==='none')return null;if(p.dw)return p.dw;const m=DW.match(p);return m?m.key:null}
+function dwData(key){if(!key)return null;if(!DWC[key]){const s=DW.byKey(key);if(!s)return null;DWC[key]='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s)}return DWC[key]}
+function dwUrl(p){const k=dwKey(p),d=dwData(k);return d?{d,t:1,v:'dw:'+k,dw:1}:null}
+{const _pu=phUrl;phUrl=function(p){return _pu(p)||(p&&p.ph?null:dwUrl(p))}}
+/* en el formulario: dibujo elegido a mano (se guarda con el producto) */
+function dwFormVal(){const i=document.getElementById('dwIn');return i?i.value:''}
+function dwFormFake(){const f=document.getElementById('prodForm');const e=f?f.elements:{};const id=e.id?e.id.value:'',p=id?db.products.find(x=>x.id===id):null;return {...(p||{}),name:e.name?e.name.value:'',category:e.category?e.category.value:'',dw:dwFormVal(),ph:p&&p.ph}}
+{const _fi=phFieldInject;phFieldInject=function(){const had=!!document.getElementById('phF');_fi.apply(this,arguments);if(had||!document.getElementById('phF'))return;
+ const bt=document.querySelector('#phF .phBt');bt.insertAdjacentHTML('beforeend','<input type="hidden" name="dw" id="dwIn"><button type="button" class="secondary" onclick="dwPick()">🎨 Elegir dibujo</button>');
+ const p=phCurProd();document.getElementById('dwIn').value=(p&&p.dw)||'';const pv=document.getElementById('phPv');if(pv)pv.dataset.k='';phFieldPaint()}}
+{const _fp=phFieldPaint;phFieldPaint=function(){const pv=document.getElementById('phPv');if(!pv)return _fp.apply(this,arguments);
+ const P=PH.pend&&PH.pend.form===phFormId()?PH.pend:null,p=phCurProd(),photo=P?(!P.del):!!(p&&p.ph&&PH.mem[p.id]);
+ if(photo||(p&&p.ph&&!P))return _fp.apply(this,arguments);
+ const fk=dwFormFake();if(P&&P.del)delete fk.ph;const d=dwUrl({...fk,ph:0}),key=(d?d.v:'e'+emo(fk))+(P?'p':'');
+ if(pv.dataset.k!==key){pv.dataset.k=key;pv.className='phPv pe'+(d?' phOn phT':'');pv.innerHTML=d?phImg(d,'phI'):'<span>'+emo(fk)+'</span>'}
+ const a=document.getElementById('phEdB'),b=document.getElementById('phDelB');if(a)a.hidden=true;if(b)b.hidden=true;
+ const g=document.getElementById('phMsg');if(g)g.textContent=(P&&P.del?'🗑️ La foto se quita al guardar. ':'')+(d?(dwFormVal()?'🎨 Dibujo elegido a mano: '+DW.nameOf(dwFormVal())+'.':'🎨 Dibujo automático por el nombre: '+DW.nameOf(d.v.slice(3))+'. Si sube una foto, la foto va primero.'):(dwFormVal()==='none'?'😀 Se usa el emoji.':'Sin dibujo para este nombre: se usa el emoji. Puede elegir uno o subir foto.'))}}
+function dwPick(){const cur=dwFormVal(),auto=DW.match(dwFormFake());const o=document.createElement('div');o.id='dwOv';
+ const cell=(k,lab,img)=>'<button type="button" class="dwC'+(cur===k?' on':'')+'" onclick="dwSet(\''+k+'\')">'+(img?'<img src="'+img+'" alt="">':'<span class="dwE">'+lab.split(' ')[0]+'</span>')+'<small>'+esc(lab)+'</small></button>';
+ o.innerHTML='<div class="dwBox"><div class="dwH"><h3>🎨 Elegir dibujo</h3><button type="button" class="secondary small" onclick="dwClose()">✕</button></div><input class="fq" id="dwQ" placeholder="Buscar dibujo…" oninput="dwFilter(this.value)"><div class="dwG">'+
+  cell('','✨ Automático'+(auto?' ('+DW.nameOf(auto.key)+')':''),auto?dwData(auto.key):'')+cell('none','😀 Solo emoji','')+
+  DW.LIST.map(([k])=>cell(k,DW.nameOf(k),dwData(k))).join('')+'</div></div>';
+ o.addEventListener('click',e=>{if(e.target===o)dwClose()});document.body.appendChild(o)}
+function dwFilter(q){q=String(q||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');document.querySelectorAll('#dwOv .dwC').forEach(b=>{b.hidden=q&&!b.textContent.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').includes(q)})}
+function dwClose(){const o=document.getElementById('dwOv');if(o)o.remove()}
+function dwSet(k){const i=document.getElementById('dwIn');if(i)i.value=k;dwClose();const pv=document.getElementById('phPv');if(pv)pv.dataset.k='';phFieldPaint();notify(k==='none'?'😀 Usará el emoji. Toque «Guardar producto».':'🎨 Dibujo listo. Toque «Guardar producto» para que quede.')}
+{const _ep=editProduct;editProduct=async function(id){const r=await _ep.apply(this,arguments);try{const i=document.getElementById('dwIn'),p=db.products.find(x=>x.id===id);if(i)i.value=(p&&p.dw)||'';const pv=document.getElementById('phPv');if(pv)pv.dataset.k='';phFieldPaint()}catch(e){}return r}}
+{const _rp=resetProductForm;resetProductForm=function(){const r=_rp.apply(this,arguments);const i=document.getElementById('dwIn');if(i)i.value='';const pv=document.getElementById('phPv');if(pv)pv.dataset.k='';phFieldPaint();return r}}
+{const st=document.createElement('style');st.textContent=`
+#dwOv{position:fixed;inset:0;z-index:9999;background:rgba(6,20,28,.62);display:flex;align-items:center;justify-content:center;padding:14px}
+#dwOv .dwBox{background:#fff;color:#14232d;border-radius:20px;padding:16px;width:min(760px,100%);max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+body.dark #dwOv .dwBox{background:#111d24;color:#e6eef1}
+#dwOv .dwH{display:flex;justify-content:space-between;align-items:center;gap:10px}#dwOv h3{margin:0}
+#dwOv .dwG{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;overflow:auto;padding:2px}
+#dwOv .dwC{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 6px;border-radius:14px;background:#f5f9fa;color:inherit;border:1.5px solid #d3e1e5;font-weight:600}
+body.dark #dwOv .dwC{background:#16252d;border-color:#2c4450}
+#dwOv .dwC.on{border-color:#0f4c63;box-shadow:0 0 0 2px #0f4c6355}
+#dwOv .dwC img{width:72px;height:72px;object-fit:contain;filter:drop-shadow(0 4px 3px rgba(8,30,40,.28))}
+#dwOv .dwC .dwE{font-size:40px;line-height:72px;height:72px}
+#dwOv .dwC small{font-size:12px;line-height:1.2;text-align:center}
+`;document.head.appendChild(st)}
 
 (async()=>{await bootStore();syncLoadMeta();await load();gate();if(document.readyState==='complete')syncStart();else window.addEventListener('load',()=>syncStart());setTimeout(lowCheck,3500);setTimeout(backupCheck,9000);setInterval(backupCheck,900000);setTimeout(cobroCheck,6500);setTimeout(fixedRun,4000);setInterval(fixedRun,3600000);setTimeout(resumenCheck,12000);setInterval(resumenCheck,900000);try{themeTick();setInterval(themeTick,60000)}catch(e){}setTimeout(fxApply,3000);setInterval(fxApply,10800000);setTimeout(expCheck,8500);setInterval(expCheck,900000);setTimeout(badgeCobro,2500);setInterval(badgeCobro,300000);setInterval(cobroCheck,900000);setTimeout(cbkRun,25000);setInterval(cbkRun,1800000)})();
 </script></body></html>
